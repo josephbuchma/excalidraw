@@ -696,7 +696,13 @@ const ExcalidrawWrapper = () => {
 
   return (
     <div
-      style={{ height: "100%" }}
+      style={{
+        maxHeight: "100%",
+        maxWidth: "100%",
+        margin: "auto",
+        border: "2px solid lightgrey",
+        aspectRatio: "3/4",
+      }}
       className={clsx("excalidraw-app", {
         "is-collaborating": isCollaborating,
       })}
