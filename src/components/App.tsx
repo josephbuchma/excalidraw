@@ -1028,22 +1028,24 @@ class App extends React.Component<AppProps, AppState> {
     );
     // rerender text elements on font load to fix #637 && #1553
     document.fonts?.addEventListener?.("loadingdone", this.onFontLoaded);
+
     // Safari-only desktop pinch zoom
-    document.addEventListener(
-      EVENT.GESTURE_START,
-      this.onGestureStart as any,
-      false,
-    );
-    document.addEventListener(
-      EVENT.GESTURE_CHANGE,
-      this.onGestureChange as any,
-      false,
-    );
-    document.addEventListener(
-      EVENT.GESTURE_END,
-      this.onGestureEnd as any,
-      false,
-    );
+    // FIXME: handle properly (related to handleWheel)
+    // document.addEventListener(
+    //   EVENT.GESTURE_START,
+    //   this.onGestureStart as any,
+    //   false,
+    // );
+    // document.addEventListener(
+    //   EVENT.GESTURE_CHANGE,
+    //   this.onGestureChange as any,
+    //   false,
+    // );
+    // document.addEventListener(
+    //   EVENT.GESTURE_END,
+    //   this.onGestureEnd as any,
+    //   false,
+    // );
     if (this.state.viewModeEnabled) {
       return;
     }
@@ -2649,6 +2651,10 @@ class App extends React.Component<AppProps, AppState> {
       initialScale &&
       gesture.initialDistance
     ) {
+      if (this.props.fixedSize) {
+        // TODO: handle pinch-zooming elements here instead
+        return;
+      }
       const center = getCenter(gesture.pointers);
       const deltaX = center.x - gesture.lastCenter.x;
       const deltaY = center.y - gesture.lastCenter.y;
@@ -6022,8 +6028,9 @@ class App extends React.Component<AppProps, AppState> {
     }
   };
 
-  private handleWheel = withBatchedUpdates((event: WheelEvent) => {
+  private handleWheelOriginal = withBatchedUpdates((event: WheelEvent) => {
     event.preventDefault();
+
     if (isPanning) {
       return;
     }
@@ -6075,6 +6082,12 @@ class App extends React.Component<AppProps, AppState> {
       scrollX: scrollX - deltaX / zoom.value,
       scrollY: scrollY - deltaY / zoom.value,
     }));
+  });
+
+  private handleWheel = withBatchedUpdates((event: WheelEvent) => {
+    event.preventDefault();
+    // TODO: think of wheel action on desktop.
+    // this.handleWheelOriginal(event);
   });
 
   private getTextWysiwygSnappedToCenterPosition(
