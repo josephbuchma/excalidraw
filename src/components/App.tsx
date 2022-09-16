@@ -898,6 +898,7 @@ class App extends React.Component<AppProps, AppState> {
         this.updateDOMRect();
       });
       this.resizeObserver?.observe(this.excalidrawContainerRef.current);
+      this.resizeObserver?.observe(window.document.body);
     } else if (window.matchMedia) {
       const mdScreenQuery = window.matchMedia(
         `(max-width: ${MQ_MAX_WIDTH_PORTRAIT}px), (max-height: ${MQ_MAX_HEIGHT_LANDSCAPE}px) and (max-width: ${MQ_MAX_WIDTH_LANDSCAPE}px)`,
