@@ -58,6 +58,7 @@ import {
   ELEMENT_TRANSLATE_AMOUNT,
   ENV,
   EVENT,
+  FRAME_HEIGHT,
   GRID_SIZE,
   IMAGE_RENDER_TIMEOUT,
   LINE_CONFIRM_THRESHOLD,
@@ -733,6 +734,7 @@ class App extends React.Component<AppProps, AppState> {
         ...getDefaultAppState(),
         isLoading: opts?.resetLoadingState ? false : state.isLoading,
         theme: this.state.theme,
+        zoom: this.state.zoom,
       }));
       this.resetHistory();
     },
@@ -797,27 +799,31 @@ class App extends React.Component<AppProps, AppState> {
       isLoading: false,
       toast: this.state.toast,
     };
-    if (initialData?.scrollToContent) {
-      scene.appState = {
-        ...scene.appState,
-        ...calculateScrollCenter(
-          scene.elements,
-          {
-            ...scene.appState,
-            width: this.state.width,
-            height: this.state.height,
-            offsetTop: this.state.offsetTop,
-            offsetLeft: this.state.offsetLeft,
-          },
-          null,
-        ),
-      };
-    }
+    // if (initialData?.scrollToContent) {
+    //   scene.appState = {
+    //     ...scene.appState,
+    //     ...calculateScrollCenter(
+    //       scene.elements,
+    //       {
+    //         ...scene.appState,
+    //         width: this.state.width,
+    //         height: this.state.height,
+    //         offsetTop: this.state.offsetTop,
+    //         offsetLeft: this.state.offsetLeft,
+    //       },
+    //       null,
+    //     ),
+    //   };
+    // }
 
     this.resetHistory();
     this.syncActionResult({
       ...scene,
       commitToHistory: true,
+    });
+
+    this.setState({
+      zoom: { value: getNormalizedZoom(this.state.height / FRAME_HEIGHT) },
     });
   };
 
@@ -936,6 +942,16 @@ class App extends React.Component<AppProps, AppState> {
     } else {
       this.updateDOMRect(this.initializeScene);
     }
+
+    const initZoom =
+      this.excalidrawContainerRef.current!.getBoundingClientRect().height /
+      FRAME_HEIGHT;
+
+    // setTimeout(() => {
+    this.setState({
+      zoom: { value: getNormalizedZoom(initZoom) },
+    });
+    // }, 100);
   }
 
   public componentWillUnmount() {
@@ -5650,6 +5666,7 @@ class App extends React.Component<AppProps, AppState> {
           appState: {
             ...(ret.data.appState || this.state),
             isLoading: false,
+            zoom: this.state.zoom,
           },
           replaceFiles: true,
           commitToHistory: true,
@@ -6186,6 +6203,9 @@ class App extends React.Component<AppProps, AppState> {
           height,
           offsetLeft,
           offsetTop,
+          scrollX: 0,
+          scrollY: 0,
+          zoom: { value: getNormalizedZoom(height / FRAME_HEIGHT) },
         },
         () => {
           cb && cb();
