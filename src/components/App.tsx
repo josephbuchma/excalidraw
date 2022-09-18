@@ -1069,23 +1069,24 @@ class App extends React.Component<AppProps, AppState> {
     // rerender text elements on font load to fix #637 && #1553
     document.fonts?.addEventListener?.("loadingdone", this.onFontLoaded);
 
-    // Safari-only desktop pinch zoom
-    // FIXME: handle properly (related to handleWheel)
-    // document.addEventListener(
-    //   EVENT.GESTURE_START,
-    //   this.onGestureStart as any,
-    //   false,
-    // );
-    // document.addEventListener(
-    //   EVENT.GESTURE_CHANGE,
-    //   this.onGestureChange as any,
-    //   false,
-    // );
-    // document.addEventListener(
-    //   EVENT.GESTURE_END,
-    //   this.onGestureEnd as any,
-    //   false,
-    // );
+    if (this.state.canvasSize.mode !== "fixed") {
+      // Safari-only desktop pinch zoom
+      document.addEventListener(
+        EVENT.GESTURE_START,
+        this.onGestureStart as any,
+        false,
+      );
+      document.addEventListener(
+        EVENT.GESTURE_CHANGE,
+        this.onGestureChange as any,
+        false,
+      );
+      document.addEventListener(
+        EVENT.GESTURE_END,
+        this.onGestureEnd as any,
+        false,
+      );
+    }
     if (this.state.viewModeEnabled) {
       return;
     }
@@ -6068,10 +6069,10 @@ class App extends React.Component<AppProps, AppState> {
     }
   };
 
-  private handleWheelOriginal = withBatchedUpdates((event: WheelEvent) => {
+  private handleWheel = withBatchedUpdates((event: WheelEvent) => {
     event.preventDefault();
 
-    if (isPanning) {
+    if (isPanning || this.state.canvasSize.mode === "fixed") {
       return;
     }
 
@@ -6122,12 +6123,6 @@ class App extends React.Component<AppProps, AppState> {
       scrollX: scrollX - deltaX / zoom.value,
       scrollY: scrollY - deltaY / zoom.value,
     }));
-  });
-
-  private handleWheel = withBatchedUpdates((event: WheelEvent) => {
-    event.preventDefault();
-    // TODO: think of wheel action on desktop.
-    // this.handleWheelOriginal(event);
   });
 
   private getTextWysiwygSnappedToCenterPosition(
