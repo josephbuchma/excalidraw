@@ -61,6 +61,7 @@ export const actionChangeExportScale = register({
             exportedElements,
             DEFAULT_EXPORT_PADDING,
             s,
+            appState,
           );
 
           const scaleButtonTitle = `${t(

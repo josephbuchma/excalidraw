@@ -58,7 +58,6 @@ import {
   ELEMENT_TRANSLATE_AMOUNT,
   ENV,
   EVENT,
-  FRAME_HEIGHT,
   GRID_SIZE,
   IMAGE_RENDER_TIMEOUT,
   LINE_CONFIRM_THRESHOLD,
@@ -201,6 +200,7 @@ import {
   PointerDownState,
   SceneData,
   Device,
+  CanvasSize,
 } from "../types";
 import {
   debounce,
@@ -506,12 +506,22 @@ class App extends React.Component<AppProps, AppState> {
       renderCustomStats,
     } = this.props;
 
+    const getFixedSizeAspectRatio = () => {
+      if (this.state.canvasSize.mode !== "fixed") {
+        return undefined;
+      }
+      const { width, height } = this.state.canvasSize;
+      return `${width / height}`;
+    };
+
     return (
       <div
         className={clsx("excalidraw excalidraw-container", {
           "excalidraw--view-mode": this.state.viewModeEnabled,
           "excalidraw--mobile": this.device.isMobile,
+          "excalidraw--fixed-canvas": this.state.canvasSize.mode === "fixed",
         })}
+        style={{ aspectRatio: getFixedSizeAspectRatio() }}
         ref={this.excalidrawContainerRef}
         onDrop={this.handleAppOnDrop}
         tabIndex={0}
@@ -732,6 +742,9 @@ class App extends React.Component<AppProps, AppState> {
       this.scene.replaceAllElements([]);
       this.setState((state) => ({
         ...getDefaultAppState(),
+        canvasSize: this.props.defaultCanvasSize
+          ? { mode: "fixed", ...this.props.defaultCanvasSize }
+          : { mode: "infinite" },
         isLoading: opts?.resetLoadingState ? false : state.isLoading,
         theme: this.state.theme,
         zoom: this.state.zoom,
@@ -784,6 +797,12 @@ class App extends React.Component<AppProps, AppState> {
       };
     }
     const scene = restore(initialData, null, null);
+    const canvasSize: CanvasSize =
+      scene.appState.canvasSize.mode !== "default"
+        ? scene.appState.canvasSize
+        : this.props.defaultCanvasSize
+        ? { mode: "fixed", ...this.props.defaultCanvasSize }
+        : { mode: "infinite" };
     scene.appState = {
       ...scene.appState,
       // we're falling back to current (pre-init) state when deciding
@@ -798,34 +817,48 @@ class App extends React.Component<AppProps, AppState> {
           : scene.appState.activeTool,
       isLoading: false,
       toast: this.state.toast,
+      canvasSize,
+      zoom:
+        canvasSize.mode === "fixed"
+          ? this.calculateFixedCanvasZoom(canvasSize)
+          : scene.appState.zoom,
     };
-    // if (initialData?.scrollToContent) {
-    //   scene.appState = {
-    //     ...scene.appState,
-    //     ...calculateScrollCenter(
-    //       scene.elements,
-    //       {
-    //         ...scene.appState,
-    //         width: this.state.width,
-    //         height: this.state.height,
-    //         offsetTop: this.state.offsetTop,
-    //         offsetLeft: this.state.offsetLeft,
-    //       },
-    //       null,
-    //     ),
-    //   };
-    // }
+
+    if (
+      initialData?.scrollToContent &&
+      scene.appState.canvasSize.mode !== "fixed"
+    ) {
+      scene.appState = {
+        ...scene.appState,
+        ...calculateScrollCenter(
+          scene.elements,
+          {
+            ...scene.appState,
+            width: this.state.width,
+            height: this.state.height,
+            offsetTop: this.state.offsetTop,
+            offsetLeft: this.state.offsetLeft,
+          },
+          null,
+        ),
+      };
+    }
 
     this.resetHistory();
     this.syncActionResult({
       ...scene,
       commitToHistory: true,
     });
-
-    this.setState({
-      zoom: { value: getNormalizedZoom(this.state.height / FRAME_HEIGHT) },
-    });
   };
+
+  private calculateFixedCanvasZoom(canvasSize: CanvasSize) {
+    if (canvasSize.mode !== "fixed") {
+      return this.state.zoom;
+    }
+    return {
+      value: getNormalizedZoom(this.state.height / canvasSize.height),
+    };
+  }
 
   private refreshDeviceState = (container: HTMLDivElement) => {
     const { width, height } = container.getBoundingClientRect();
@@ -942,16 +975,6 @@ class App extends React.Component<AppProps, AppState> {
     } else {
       this.updateDOMRect(this.initializeScene);
     }
-
-    const initZoom =
-      this.excalidrawContainerRef.current!.getBoundingClientRect().height /
-      FRAME_HEIGHT;
-
-    // setTimeout(() => {
-    this.setState({
-      zoom: { value: getNormalizedZoom(initZoom) },
-    });
-    // }, 100);
   }
 
   public componentWillUnmount() {
@@ -2668,8 +2691,7 @@ class App extends React.Component<AppProps, AppState> {
       initialScale &&
       gesture.initialDistance
     ) {
-      if (this.props.fixedSize) {
-        // TODO: handle pinch-zooming elements here instead
+      if (this.state.canvasSize.mode === "fixed") {
         return;
       }
       const center = getCenter(gesture.pointers);
@@ -6205,7 +6227,7 @@ class App extends React.Component<AppProps, AppState> {
           offsetTop,
           scrollX: 0,
           scrollY: 0,
-          zoom: { value: getNormalizedZoom(height / FRAME_HEIGHT) },
+          zoom: this.calculateFixedCanvasZoom(this.state.canvasSize),
         },
         () => {
           cb && cb();

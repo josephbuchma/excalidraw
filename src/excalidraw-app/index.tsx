@@ -696,73 +696,58 @@ const ExcalidrawWrapper = () => {
 
   return (
     <div
-      style={{
-        width: "100%",
-        height: "100%",
-      }}
+      style={{ height: "100%", width: "100%" }}
+      className={clsx("excalidraw-app", {
+        "is-collaborating": isCollaborating,
+      })}
     >
-      <div
-        style={{
-          maxHeight: "100%",
-          maxWidth: "100%",
-          margin: "auto",
-          aspectRatio: "3/4",
-          position: "relative",
-          top: "50%",
-          transform: "translateY(-50%)",
-        }}
-        className={clsx("excalidraw-app", {
-          "is-collaborating": isCollaborating,
-        })}
-      >
-        <Excalidraw
-          ref={excalidrawRefCallback}
-          onChange={onChange}
-          initialData={initialStatePromiseRef.current.promise}
-          onCollabButtonClick={() => setCollabDialogShown(true)}
-          isCollaborating={isCollaborating}
-          onPointerUpdate={collabAPI?.onPointerUpdate}
-          UIOptions={{
-            canvasActions: {
-              export: {
-                onExportToBackend,
-                renderCustomUI: (elements, appState, files) => {
-                  return (
-                    <ExportToExcalidrawPlus
-                      elements={elements}
-                      appState={appState}
-                      files={files}
-                      onError={(error) => {
-                        excalidrawAPI?.updateScene({
-                          appState: {
-                            errorMessage: error.message,
-                          },
-                        });
-                      }}
-                    />
-                  );
-                },
+      <Excalidraw
+        ref={excalidrawRefCallback}
+        onChange={onChange}
+        initialData={initialStatePromiseRef.current.promise}
+        onCollabButtonClick={() => setCollabDialogShown(true)}
+        isCollaborating={isCollaborating}
+        onPointerUpdate={collabAPI?.onPointerUpdate}
+        UIOptions={{
+          canvasActions: {
+            export: {
+              onExportToBackend,
+              renderCustomUI: (elements, appState, files) => {
+                return (
+                  <ExportToExcalidrawPlus
+                    elements={elements}
+                    appState={appState}
+                    files={files}
+                    onError={(error) => {
+                      excalidrawAPI?.updateScene({
+                        appState: {
+                          errorMessage: error.message,
+                        },
+                      });
+                    }}
+                  />
+                );
               },
             },
-          }}
-          renderTopRightUI={renderTopRightUI}
-          renderFooter={renderFooter}
-          langCode={langCode}
-          renderCustomStats={renderCustomStats}
-          detectScroll={false}
-          handleKeyboardGlobally={true}
-          onLibraryChange={onLibraryChange}
-          autoFocus={true}
-          fixedSize={{ width: 900, height: 1200 }}
+          },
+        }}
+        renderTopRightUI={renderTopRightUI}
+        renderFooter={renderFooter}
+        langCode={langCode}
+        renderCustomStats={renderCustomStats}
+        detectScroll={false}
+        handleKeyboardGlobally={true}
+        onLibraryChange={onLibraryChange}
+        autoFocus={true}
+        defaultCanvasSize={{ width: 800, height: 800 }}
+      />
+      {excalidrawAPI && <Collab excalidrawAPI={excalidrawAPI} />}
+      {errorMessage && (
+        <ErrorDialog
+          message={errorMessage}
+          onClose={() => setErrorMessage("")}
         />
-        {excalidrawAPI && <Collab excalidrawAPI={excalidrawAPI} />}
-        {errorMessage && (
-          <ErrorDialog
-            message={errorMessage}
-            onClose={() => setErrorMessage("")}
-          />
-        )}
-      </div>
+      )}
     </div>
   );
 };

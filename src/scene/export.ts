@@ -3,7 +3,7 @@ import { NonDeletedExcalidrawElement } from "../element/types";
 import { getCommonBounds } from "../element/bounds";
 import { renderScene, renderSceneToSvg } from "../renderer/renderScene";
 import { distance } from "../utils";
-import { AppState, BinaryFiles } from "../types";
+import { AppState, BinaryFiles, CanvasSize } from "../types";
 import { DEFAULT_EXPORT_PADDING, SVG_NS, THEME_FILTER } from "../constants";
 import { getDefaultAppState } from "../appState";
 import { serializeAsJSON } from "../data/json";
@@ -37,7 +37,11 @@ export const exportToCanvas = async (
     return { canvas, scale: appState.exportScale };
   },
 ) => {
-  const [minX, minY, width, height] = getCanvasSize(elements, exportPadding);
+  const [minX, minY, width, height] = getCanvasSize(
+    elements,
+    exportPadding,
+    appState,
+  );
 
   const { canvas, scale = 1 } = createCanvas(width, height);
 
@@ -82,6 +86,7 @@ export const exportToCanvas = async (
 export const exportToSvg = async (
   elements: readonly NonDeletedExcalidrawElement[],
   appState: {
+    canvasSize: CanvasSize;
     exportBackground: boolean;
     exportPadding?: number;
     exportScale?: number;
@@ -109,7 +114,11 @@ export const exportToSvg = async (
       console.error(error);
     }
   }
-  const [minX, minY, width, height] = getCanvasSize(elements, exportPadding);
+  const [minX, minY, width, height] = getCanvasSize(
+    elements,
+    exportPadding,
+    appState,
+  );
 
   // initialize SVG root
   const svgRoot = document.createElementNS(SVG_NS, "svg");
@@ -176,7 +185,13 @@ export const exportToSvg = async (
 const getCanvasSize = (
   elements: readonly NonDeletedExcalidrawElement[],
   exportPadding: number,
+  appState: { canvasSize: CanvasSize },
 ): [number, number, number, number] => {
+  if (appState.canvasSize.mode === "fixed") {
+    const { width, height } = appState.canvasSize;
+    return [0, 0, width, height];
+  }
+
   const [minX, minY, maxX, maxY] = getCommonBounds(elements);
   const width = distance(minX, maxX) + exportPadding * 2;
   const height = distance(minY, maxY) + exportPadding + exportPadding;
@@ -188,10 +203,13 @@ export const getExportSize = (
   elements: readonly NonDeletedExcalidrawElement[],
   exportPadding: number,
   scale: number,
+  appState: { canvasSize: CanvasSize },
 ): [number, number] => {
-  const [, , width, height] = getCanvasSize(elements, exportPadding).map(
-    (dimension) => Math.trunc(dimension * scale),
-  );
+  const [, , width, height] = getCanvasSize(
+    elements,
+    exportPadding,
+    appState,
+  ).map((dimension) => Math.trunc(dimension * scale));
 
   return [width, height];
 };

@@ -382,6 +382,7 @@ For a complete list of variables, check [theme.scss](https://github.com/excalidr
 | --- | --- | --- | --- |
 | [`onChange`](#onChange) | Function |  | This callback is triggered whenever the component updates due to any change. This callback will receive the excalidraw elements and the current app state. |
 | [`initialData`](#initialData) | <pre>{elements?: <a href="https://github.com/excalidraw/excalidraw/blob/master/src/element/types.ts#L106">ExcalidrawElement[]</a>, appState?: <a href="https://github.com/excalidraw/excalidraw/blob/master/src/types.ts#L79">AppState<a> } </pre> | null | The initial data with which app loads. |
+| [`defaultCanvasSize`](#defaultCanvasSize) | {width: number, height: number} | This prop if passed sets fixed canvas size (no infinite scroll) |
 | [`ref`](#ref) | [`createRef`](https://reactjs.org/docs/refs-and-the-dom.html#creating-refs) &#124; [`useRef`](https://reactjs.org/docs/hooks-reference.html#useref) &#124; [`callbackRef`](https://reactjs.org/docs/refs-and-the-dom.html#callback-refs) &#124; <pre>{ current: { readyPromise: <a href="https://github.com/excalidraw/excalidraw/blob/master/src/utils.ts#L317">resolvablePromise</a> } }</pre> |  | Ref to be passed to Excalidraw |
 | [`onCollabButtonClick`](#onCollabButtonClick) | Function |  | Callback to be triggered when the collab button is clicked |
 | [`isCollaborating`](#isCollaborating) | `boolean` |  | This implies if the app is in collaboration mode |
@@ -477,6 +478,10 @@ Beyond attributes that Excalidraw elements already support, you can store custom
 You can use this to add any extra information you need to keep track of.
 
 You can add `customData` to elements when passing them as `initialData`, or using [`updateScene`](#updateScene)/[`updateLibrary`](#updateLibrary) afterwards.
+
+#### `defaultCanvasSize`
+
+Enables fixed canvas size mode by default. The canvas size mode is stored in the AppState, so importing existing document with "infinite canvas" will still work as usual. In the fixed canvas size mode, Excalidraw fills parent container while maintaining proper aspect ratio of desired canvas size. Zooming and panning is not availabe in fixed cavas size mode.
 
 #### `ref`
 

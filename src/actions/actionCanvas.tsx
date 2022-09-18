@@ -60,6 +60,7 @@ export const actionClearCanvas = register({
       ),
       appState: {
         ...getDefaultAppState(),
+        canvasSize: appState.canvasSize,
         zoom: appState.zoom,
         files: {},
         theme: appState.theme,

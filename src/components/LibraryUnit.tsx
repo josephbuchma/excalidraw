@@ -55,6 +55,7 @@ export const LibraryUnit = ({
         {
           exportBackground: false,
           viewBackgroundColor: oc.white,
+          canvasSize: { mode: "infinite" },
         },
         files,
       );
