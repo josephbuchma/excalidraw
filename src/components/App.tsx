@@ -799,6 +799,7 @@ class App extends React.Component<AppProps, AppState> {
         : this.props.defaultCanvasSize
         ? { mode: "fixed", ...this.props.defaultCanvasSize }
         : { mode: "infinite" };
+
     scene.appState = {
       ...scene.appState,
       theme: this.props.theme || scene.appState.theme,
@@ -815,10 +816,10 @@ class App extends React.Component<AppProps, AppState> {
       isLoading: false,
       toast: this.state.toast,
       canvasSize,
-      zoom:
-        canvasSize.mode === "fixed"
-          ? this.calculateFixedCanvasZoom(canvasSize)
-          : scene.appState.zoom,
+      ...this.nextStatePropertiesForFixedCanvas({
+        canvasSize,
+        containerWidth: this.state.width,
+      }),
     };
 
     if (
@@ -848,12 +849,26 @@ class App extends React.Component<AppProps, AppState> {
     });
   };
 
-  private calculateFixedCanvasZoom(canvasSize: CanvasSize) {
-    if (canvasSize.mode !== "fixed") {
-      return this.state.zoom;
+  private nextStatePropertiesForFixedCanvas({
+    canvasSize,
+    containerWidth,
+  }: {
+    canvasSize: CanvasSize;
+    containerWidth: number;
+  }): Pick<AppState, "zoom" | "scrollX" | "scrollY"> {
+    if (canvasSize.mode === "fixed") {
+      return {
+        zoom: {
+          value: getNormalizedZoom(containerWidth / canvasSize.width),
+        },
+        scrollX: 0,
+        scrollY: 0,
+      };
     }
     return {
-      value: getNormalizedZoom(this.state.height / canvasSize.height),
+      zoom: this.state.zoom,
+      scrollX: this.state.scrollX,
+      scrollY: this.state.scrollY,
     };
   }
 
@@ -6238,9 +6253,10 @@ class App extends React.Component<AppProps, AppState> {
           height,
           offsetLeft,
           offsetTop,
-          scrollX: 0,
-          scrollY: 0,
-          zoom: this.calculateFixedCanvasZoom(this.state.canvasSize),
+          ...this.nextStatePropertiesForFixedCanvas({
+            canvasSize: this.state.canvasSize,
+            containerWidth: width,
+          }),
         },
         () => {
           cb && cb();
