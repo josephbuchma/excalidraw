@@ -2976,7 +2976,11 @@ class App extends React.Component<AppProps, AppState> {
           isTextElement(hitElement) ? CURSOR_TYPE.TEXT : CURSOR_TYPE.CROSSHAIR,
         );
       } else if (this.state.viewModeEnabled) {
-        setCursor(this.canvas, CURSOR_TYPE.GRAB);
+        if (this.state.canvasSize.mode === "fixed") {
+          setCursor(this.canvas, CURSOR_TYPE.AUTO);
+        } else {
+          setCursor(this.canvas, CURSOR_TYPE.GRAB);
+        }
       } else if (isOverScrollBar) {
         setCursor(this.canvas, CURSOR_TYPE.AUTO);
       } else if (this.state.selectedLinearElement) {
@@ -3422,7 +3426,8 @@ class App extends React.Component<AppProps, AppState> {
           (event.button === POINTER_BUTTON.MAIN && isHoldingSpace) ||
           this.state.viewModeEnabled)
       ) ||
-      isTextElement(this.state.editingElement)
+      isTextElement(this.state.editingElement) ||
+      this.state.canvasSize.mode === "fixed"
     ) {
       return false;
     }
@@ -3648,6 +3653,9 @@ class App extends React.Component<AppProps, AppState> {
     event: React.PointerEvent<HTMLCanvasElement>,
     pointerDownState: PointerDownState,
   ): boolean => {
+    if (this.state.viewModeEnabled && this.state.canvasSize.mode === "fixed") {
+      return true;
+    }
     if (this.state.activeTool.type === "selection") {
       const elements = this.scene.getNonDeletedElements();
       const selectedElements = getSelectedElements(elements, this.state);
