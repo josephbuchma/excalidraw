@@ -281,7 +281,6 @@ export const restoreAppState = (
       lastActiveToolBeforeEraser: null,
       locked: nextAppState.activeTool.locked ?? false,
     },
-    canvasSize: appState.canvasSize || { mode: "infinite" },
     // Migrates from previous version where appState.zoom was a number
     zoom:
       typeof appState.zoom === "number"
