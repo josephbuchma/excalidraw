@@ -355,6 +355,11 @@ export const _renderScene = ({
       context.filter = THEME_FILTER;
     }
 
+    const isFixedCanvasMode =
+      appState.canvasSize.mode === "fixed" &&
+      appState.fixedCanvasFrameElement &&
+      !isExporting;
+
     // Paint background
     if (typeof renderConfig.viewBackgroundColor === "string") {
       const hasTransparence =
@@ -362,13 +367,15 @@ export const _renderScene = ({
         renderConfig.viewBackgroundColor.length === 5 || // #RGBA
         renderConfig.viewBackgroundColor.length === 9 || // #RRGGBBA
         /(hsla|rgba)\(/.test(renderConfig.viewBackgroundColor);
-      if (hasTransparence) {
+      if (hasTransparence || isFixedCanvasMode) {
         context.clearRect(0, 0, normalizedCanvasWidth, normalizedCanvasHeight);
       }
-      context.save();
-      context.fillStyle = renderConfig.viewBackgroundColor;
-      context.fillRect(0, 0, normalizedCanvasWidth, normalizedCanvasHeight);
-      context.restore();
+      if (!isFixedCanvasMode) {
+        context.save();
+        context.fillStyle = renderConfig.viewBackgroundColor;
+        context.fillRect(0, 0, normalizedCanvasWidth, normalizedCanvasHeight);
+        context.restore();
+      }
     } else {
       context.clearRect(0, 0, normalizedCanvasWidth, normalizedCanvasHeight);
     }
@@ -376,6 +383,19 @@ export const _renderScene = ({
     // Apply zoom
     context.save();
     context.scale(renderConfig.zoom.value, renderConfig.zoom.value);
+
+    if (isFixedCanvasMode) {
+      try {
+        renderElement(
+          appState.fixedCanvasFrameElement!,
+          rc,
+          context,
+          renderConfig,
+        );
+      } catch (error: any) {
+        console.error(error);
+      }
+    }
 
     // Grid
     if (renderGrid && appState.gridSize) {

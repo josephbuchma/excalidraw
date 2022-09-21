@@ -760,7 +760,7 @@ const ExcalidrawWrapper = () => {
         onLibraryChange={onLibraryChange}
         autoFocus={true}
         theme={theme}
-        defaultCanvasSize={{ width: 800, height: 800 }}
+        defaultCanvasSize={{ width: 400, height: 400, autoZoom: false }}
       />
       {excalidrawAPI && <Collab excalidrawAPI={excalidrawAPI} />}
       {errorMessage && (

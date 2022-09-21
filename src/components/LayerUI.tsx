@@ -151,6 +151,7 @@ const LayerUI = ({
         onExportToPng={createExporter("png")}
         onExportToSvg={createExporter("svg")}
         onExportToClipboard={createExporter("clipboard")}
+        exportPadding={appState.canvasSize.mode === "fixed" ? 0 : undefined}
       />
     );
   };

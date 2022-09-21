@@ -157,6 +157,7 @@ import {
   isSelectedViaGroup,
   selectGroupsForSelectedElements,
 } from "../groups";
+import { adjustAppStateForCanvasSize } from "../canvas-size";
 import History from "../history";
 import { defaultLang, getLanguage, languages, setLanguage, t } from "../i18n";
 import {
@@ -200,7 +201,6 @@ import {
   PointerDownState,
   SceneData,
   Device,
-  CanvasSize,
 } from "../types";
 import {
   debounce,
@@ -366,21 +366,26 @@ class App extends React.Component<AppProps, AppState> {
       gridModeEnabled = false,
       theme = defaultAppState.theme,
       name = defaultAppState.name,
+      defaultCanvasSize,
     } = props;
-    this.state = {
-      ...defaultAppState,
-      theme,
-      isLoading: true,
-      ...this.getCanvasOffsets(),
-      viewModeEnabled,
-      zenModeEnabled,
-      gridSize: gridModeEnabled ? GRID_SIZE : null,
-      name,
-      width: window.innerWidth,
-      height: window.innerHeight,
-      showHyperlinkPopup: false,
-      isLibraryMenuDocked: false,
-    };
+
+    this.state = adjustAppStateForCanvasSize(
+      {
+        ...defaultAppState,
+        theme,
+        isLoading: true,
+        ...this.getCanvasOffsets(),
+        viewModeEnabled,
+        zenModeEnabled,
+        gridSize: gridModeEnabled ? GRID_SIZE : null,
+        name,
+        width: window.innerWidth,
+        height: window.innerHeight,
+        showHyperlinkPopup: false,
+        isLibraryMenuDocked: false,
+      },
+      defaultCanvasSize,
+    );
 
     this.id = nanoid();
 
@@ -506,22 +511,14 @@ class App extends React.Component<AppProps, AppState> {
       renderCustomStats,
     } = this.props;
 
-    const getFixedSizeAspectRatio = () => {
-      if (this.state.canvasSize.mode !== "fixed") {
-        return undefined;
-      }
-      const { width, height } = this.state.canvasSize;
-      return `${width / height}`;
-    };
-
     return (
       <div
         className={clsx("excalidraw excalidraw-container", {
           "excalidraw--view-mode": this.state.viewModeEnabled,
           "excalidraw--mobile": this.device.isMobile,
-          "excalidraw--fixed-canvas": this.state.canvasSize.mode === "fixed",
+          "excalidraw--fixed-size-canvas":
+            this.state.canvasSize.mode === "fixed",
         })}
-        style={{ aspectRatio: getFixedSizeAspectRatio() }}
         ref={this.excalidrawContainerRef}
         onDrop={this.handleAppOnDrop}
         tabIndex={0}
@@ -672,18 +669,22 @@ class App extends React.Component<AppProps, AppState> {
         }
         this.setState(
           (state) => {
-            // using Object.assign instead of spread to fool TS 4.2.2+ into
-            // regarding the resulting type as not containing undefined
-            // (which the following expression will never contain)
-            return Object.assign(actionResult.appState || {}, {
-              editingElement:
-                editingElement || actionResult.appState?.editingElement || null,
-              viewModeEnabled,
-              zenModeEnabled,
-              gridSize,
-              theme,
-              name,
-            });
+            return adjustAppStateForCanvasSize(
+              {
+                ...state,
+                ...actionResult.appState,
+                editingElement:
+                  editingElement ||
+                  actionResult.appState?.editingElement ||
+                  null,
+                viewModeEnabled,
+                zenModeEnabled,
+                gridSize,
+                theme,
+                name,
+              },
+              this.props.defaultCanvasSize,
+            );
           },
           () => {
             if (actionResult.syncHistory) {
@@ -793,13 +794,6 @@ class App extends React.Component<AppProps, AppState> {
       };
     }
     const scene = restore(initialData, null, null);
-    const canvasSize: CanvasSize =
-      scene.appState.canvasSize.mode !== "default"
-        ? scene.appState.canvasSize
-        : this.props.defaultCanvasSize
-        ? { mode: "fixed", ...this.props.defaultCanvasSize }
-        : { mode: "infinite" };
-
     scene.appState = {
       ...scene.appState,
       theme: this.props.theme || scene.appState.theme,
@@ -815,17 +809,9 @@ class App extends React.Component<AppProps, AppState> {
           : scene.appState.activeTool,
       isLoading: false,
       toast: this.state.toast,
-      canvasSize,
-      ...this.nextStatePropertiesForFixedCanvas({
-        canvasSize,
-        containerWidth: this.state.width,
-      }),
     };
 
-    if (
-      initialData?.scrollToContent &&
-      scene.appState.canvasSize.mode !== "fixed"
-    ) {
+    if (initialData?.scrollToContent) {
       scene.appState = {
         ...scene.appState,
         ...calculateScrollCenter(
@@ -848,29 +834,6 @@ class App extends React.Component<AppProps, AppState> {
       commitToHistory: true,
     });
   };
-
-  private nextStatePropertiesForFixedCanvas({
-    canvasSize,
-    containerWidth,
-  }: {
-    canvasSize: CanvasSize;
-    containerWidth: number;
-  }): Pick<AppState, "zoom" | "scrollX" | "scrollY"> {
-    if (canvasSize.mode === "fixed") {
-      return {
-        zoom: {
-          value: getNormalizedZoom(containerWidth / canvasSize.width),
-        },
-        scrollX: 0,
-        scrollY: 0,
-      };
-    }
-    return {
-      zoom: this.state.zoom,
-      scrollX: this.state.scrollX,
-      scrollY: this.state.scrollY,
-    };
-  }
 
   private refreshDeviceState = (container: HTMLDivElement) => {
     const { width, height } = container.getBoundingClientRect();
@@ -1343,6 +1306,7 @@ class App extends React.Component<AppProps, AppState> {
           imageCache: this.imageCache,
           isExporting: false,
           renderScrollbars: !this.device.isMobile,
+          canvasSize: this.state.canvasSize,
         },
         callback: ({ atLeastOneVisibleElement, scrollBars }) => {
           if (scrollBars) {
@@ -3442,7 +3406,7 @@ class App extends React.Component<AppProps, AppState> {
           this.state.viewModeEnabled)
       ) ||
       isTextElement(this.state.editingElement) ||
-      this.state.canvasSize.mode === "fixed"
+      this.shouldPreventPanOrZoom()
     ) {
       return false;
     }
@@ -3668,7 +3632,7 @@ class App extends React.Component<AppProps, AppState> {
     event: React.PointerEvent<HTMLCanvasElement>,
     pointerDownState: PointerDownState,
   ): boolean => {
-    if (this.state.viewModeEnabled && this.state.canvasSize.mode === "fixed") {
+    if (this.state.viewModeEnabled && this.shouldPreventPanOrZoom()) {
       return true;
     }
     if (this.state.activeTool.type === "selection") {
@@ -5722,7 +5686,6 @@ class App extends React.Component<AppProps, AppState> {
           appState: {
             ...(ret.data.appState || this.state),
             isLoading: false,
-            zoom: this.state.zoom,
           },
           replaceFiles: true,
           commitToHistory: true,
@@ -6102,10 +6065,15 @@ class App extends React.Component<AppProps, AppState> {
     }
   };
 
+  private shouldPreventPanOrZoom(): boolean {
+    const { canvasSize: cs } = this.state;
+    return cs.mode === "fixed" && !!cs.autoZoom;
+  }
+
   private handleWheel = withBatchedUpdates((event: WheelEvent) => {
     event.preventDefault();
 
-    if (isPanning || this.state.canvasSize.mode === "fixed") {
+    if (isPanning || this.shouldPreventPanOrZoom()) {
       return;
     }
 
@@ -6248,16 +6216,16 @@ class App extends React.Component<AppProps, AppState> {
       }
 
       this.setState(
-        {
-          width,
-          height,
-          offsetLeft,
-          offsetTop,
-          ...this.nextStatePropertiesForFixedCanvas({
-            canvasSize: this.state.canvasSize,
-            containerWidth: width,
-          }),
-        },
+        adjustAppStateForCanvasSize(
+          {
+            ...this.state,
+            width,
+            height,
+            offsetLeft,
+            offsetTop,
+          },
+          this.props.defaultCanvasSize,
+        ),
         () => {
           cb && cb();
         },
