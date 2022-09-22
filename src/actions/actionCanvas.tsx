@@ -22,9 +22,17 @@ import clsx from "clsx";
 export const actionChangeViewBackgroundColor = register({
   name: "changeViewBackgroundColor",
   trackEvent: false,
-  perform: (_, appState, value) => {
+  perform: (_, appState, value: { viewBackgroundColor: string }) => {
     return {
-      appState: { ...appState, ...value },
+      appState: {
+        ...appState,
+        ...value,
+        fixedCanvasFrameElement:
+          appState.fixedCanvasFrameElement &&
+          newElementWith(appState.fixedCanvasFrameElement, {
+            backgroundColor: value.viewBackgroundColor,
+          }),
+      },
       commitToHistory: !!value.viewBackgroundColor,
     };
   },
@@ -60,6 +68,9 @@ export const actionClearCanvas = register({
       ),
       appState: {
         ...getDefaultAppState(),
+        scrollX: appState.canvasSize.mode === "fixed" ? appState.scrollX : 0,
+        scrollY: appState.canvasSize.mode === "fixed" ? appState.scrollY : 0,
+        zoom: appState.zoom,
         files: {},
         theme: appState.theme,
         penMode: appState.penMode,

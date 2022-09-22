@@ -64,6 +64,16 @@ export type BinaryFileData = {
   created: number;
 };
 
+export type CanvasSize =
+  | {
+      mode: "fixed";
+      width: number;
+      height: number;
+      autoZoom?: boolean;
+    }
+  | { mode: "infinite" }
+  | { mode: "default" };
+
 export type BinaryFileMetadata = Omit<BinaryFileData, "dataURL">;
 
 export type BinaryFiles = Record<ExcalidrawElement["id"], BinaryFileData>;
@@ -79,8 +89,10 @@ export type LastActiveToolBeforeEraser =
     }
   | null;
 export type AppState = {
+  canvasSize: CanvasSize;
   isLoading: boolean;
   errorMessage: string | null;
+  fixedCanvasFrameElement: NonDeletedExcalidrawElement | null;
   draggingElement: NonDeletedExcalidrawElement | null;
   resizingElement: NonDeletedExcalidrawElement | null;
   multiElement: NonDeleted<ExcalidrawLinearElement> | null;
@@ -313,6 +325,7 @@ export interface ExcalidrawProps {
     pointerDownState: PointerDownState,
   ) => void;
   onScrollChange?: (scrollX: number, scrollY: number) => void;
+  defaultCanvasSize?: { width: number; height: number; autoZoom?: boolean };
 }
 
 export type SceneData = {

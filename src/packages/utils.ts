@@ -165,6 +165,7 @@ export const exportToSvg = async ({
     {
       ...restoredAppState,
       exportPadding,
+      canvasSize: appState.canvasSize || { mode: "infinite" },
     },
     files,
   );
