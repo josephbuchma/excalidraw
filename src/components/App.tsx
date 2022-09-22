@@ -2877,6 +2877,10 @@ class App extends React.Component<AppProps, AppState> {
       return;
     }
 
+    if (this.isPointerOutsideCanvas({ x: scenePointerX, y: scenePointerY })) {
+      return;
+    }
+
     const elements = this.scene.getNonDeletedElements();
 
     const selectedElements = getSelectedElements(elements, this.state);
@@ -3237,11 +3241,12 @@ class App extends React.Component<AppProps, AppState> {
     }
 
     const allowOnPointerDown =
-      !this.state.penMode ||
-      event.pointerType !== "touch" ||
-      this.state.activeTool.type === "selection" ||
-      this.state.activeTool.type === "text" ||
-      this.state.activeTool.type === "image";
+      (!this.state.penMode ||
+        event.pointerType !== "touch" ||
+        this.state.activeTool.type === "selection" ||
+        this.state.activeTool.type === "text" ||
+        this.state.activeTool.type === "image") &&
+      !this.isPointerOutsideCanvas(pointerDownState.origin);
 
     if (!allowOnPointerDown) {
       return;
@@ -3625,6 +3630,18 @@ class App extends React.Component<AppProps, AppState> {
     }
   };
 
+  private isPointerOutsideCanvas({ x, y }: { x: number; y: number }): boolean {
+    if (this.state.canvasSize.mode !== "fixed") {
+      return false;
+    }
+    return (
+      x < 0 ||
+      x > this.state.canvasSize.width ||
+      y < 0 ||
+      y > this.state.canvasSize.height
+    );
+  }
+
   /**
    * @returns whether the pointer event has been completely handled
    */
@@ -3637,6 +3654,10 @@ class App extends React.Component<AppProps, AppState> {
     }
     if (this.state.activeTool.type === "selection") {
       const elements = this.scene.getNonDeletedElements();
+      if (this.isPointerOutsideCanvas(pointerDownState.origin)) {
+        this.clearSelection(null);
+        return false;
+      }
       const selectedElements = getSelectedElements(elements, this.state);
       if (selectedElements.length === 1 && !this.state.editingLinearElement) {
         const elementWithTransformHandleType =

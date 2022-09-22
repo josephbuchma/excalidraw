@@ -384,14 +384,14 @@ export const _renderScene = ({
     context.save();
     context.scale(renderConfig.zoom.value, renderConfig.zoom.value);
 
-    if (isFixedCanvasMode) {
+    if (appState.canvasSize.mode === "fixed") {
       try {
-        renderElement(
-          appState.fixedCanvasFrameElement!,
-          rc,
-          context,
-          renderConfig,
-        );
+        const { width, height } = appState.canvasSize!;
+        context.rect(appState.scrollX, appState.scrollY, width, height);
+        context.clip();
+        renderElement(appState.fixedCanvasFrameElement!, rc, context, {
+          ...renderConfig,
+        });
       } catch (error: any) {
         console.error(error);
       }
