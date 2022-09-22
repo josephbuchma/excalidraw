@@ -1044,7 +1044,7 @@ class App extends React.Component<AppProps, AppState> {
     // rerender text elements on font load to fix #637 && #1553
     document.fonts?.addEventListener?.("loadingdone", this.onFontLoaded);
 
-    if (this.state.canvasSize.mode !== "fixed") {
+    if (!this.shouldPreventPanOrZoom()) {
       // Safari-only desktop pinch zoom
       document.addEventListener(
         EVENT.GESTURE_START,
@@ -2672,7 +2672,7 @@ class App extends React.Component<AppProps, AppState> {
       initialScale &&
       gesture.initialDistance
     ) {
-      if (this.state.canvasSize.mode === "fixed") {
+      if (this.shouldPreventPanOrZoom()) {
         return;
       }
       const center = getCenter(gesture.pointers);
@@ -2955,7 +2955,7 @@ class App extends React.Component<AppProps, AppState> {
           isTextElement(hitElement) ? CURSOR_TYPE.TEXT : CURSOR_TYPE.CROSSHAIR,
         );
       } else if (this.state.viewModeEnabled) {
-        if (this.state.canvasSize.mode === "fixed") {
+        if (this.shouldPreventPanOrZoom()) {
           setCursor(this.canvas, CURSOR_TYPE.AUTO);
         } else {
           setCursor(this.canvas, CURSOR_TYPE.GRAB);
