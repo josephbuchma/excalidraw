@@ -264,6 +264,7 @@ import {
   isLocalLink,
 } from "../element/Hyperlink";
 import { shouldShowBoundingBox } from "../element/transformHandles";
+import { measureFontSizeFromWH } from "../element/resizeElements";
 
 const deviceContextInitialValue = {
   isSmScreen: false,
@@ -2279,14 +2280,16 @@ class App extends React.Component<AppProps, AppState> {
       preferSelected?: boolean;
       includeBoundTextElement?: boolean;
       includeLockedElements?: boolean;
+      filter?: (el: ExcalidrawElement) => boolean;
     },
   ): NonDeleted<ExcalidrawElement> | null {
+    const filter = opts?.filter || ((el: ExcalidrawElement) => true);
     const allHitElements = this.getElementsAtPosition(
       x,
       y,
       opts?.includeBoundTextElement,
       opts?.includeLockedElements,
-    );
+    ).filter(filter);
     if (allHitElements.length > 1) {
       if (opts?.preferSelected) {
         for (let index = allHitElements.length - 1; index > -1; index--) {
@@ -2665,16 +2668,14 @@ class App extends React.Component<AppProps, AppState> {
       });
     }
 
-    const initialScale = gesture.initialScale;
+    const { initialScale, lastCenter } = gesture;
     if (
       gesture.pointers.size === 2 &&
       gesture.lastCenter &&
       initialScale &&
+      lastCenter &&
       gesture.initialDistance
     ) {
-      if (this.shouldPreventPanOrZoom()) {
-        return;
-      }
       const center = getCenter(gesture.pointers);
       const deltaX = center.x - gesture.lastCenter.x;
       const deltaY = center.y - gesture.lastCenter.y;
@@ -2690,24 +2691,97 @@ class App extends React.Component<AppProps, AppState> {
         ? getNormalizedZoom(initialScale * scaleFactor)
         : this.state.zoom.value;
 
-      this.setState((state) => {
-        const zoomState = getStateForZoom(
-          {
-            viewportX: center.x,
-            viewportY: center.y,
-            nextZoom,
-          },
-          state,
+      if (this.props.alternativeGestures?.pinchResize) {
+        const pos = viewportCoordsToSceneCoords(
+          { clientX: center.x, clientY: center.y },
+          this.state,
         );
 
-        return {
-          zoom: zoomState.zoom,
-          scrollX: zoomState.scrollX + deltaX / nextZoom,
-          scrollY: zoomState.scrollY + deltaY / nextZoom,
-          shouldCacheIgnoreZoom: true,
-        };
-      });
-      this.resetShouldCacheIgnoreZoomDebounced();
+        let pinch = this.state.pinchState;
+        if (
+          !pinch ||
+          !pinch.pointers
+            .map((v) => gesture.pointers.has(v))
+            .reduce((v, a) => v && a, true)
+        ) {
+          const elem = this.getElementAtPosition(pos.x, pos.y, {
+            filter: (el) =>
+              this.props.alternativeGestures!.pinchResize!.includes(el.type),
+          });
+          if (
+            !elem ||
+            !this.props.alternativeGestures.pinchResize.includes(elem.type)
+          ) {
+            return;
+          }
+          pinch = {
+            elSnap: elem,
+            focalPoint: {
+              xFactor:
+                elem.type === "image" ? (pos.x - elem.x) / elem.width : 0.5,
+              yFactor:
+                elem.type === "image" ? (pos.y - elem.y) / elem.height : 0.5,
+            },
+            pointers: [...gesture.pointers.keys()] as [number, number],
+          };
+          this.setState({ pinchState: pinch });
+        }
+
+        const elem = this.scene.getElement(pinch.elSnap.id);
+        if (!elem) {
+          return;
+        }
+
+        this.scene.replaceAllElements(
+          this.scene.getNonDeletedElements().map((el) => {
+            if (el.id !== elem.id) {
+              return el;
+            }
+            const width = pinch!.elSnap.width * scaleFactor;
+            const height = pinch!.elSnap.height * scaleFactor;
+            const font =
+              el.type === "text" &&
+              !el.isDeleted &&
+              pinch!.elSnap.type === "text" &&
+              measureFontSizeFromWH(el, width, height);
+            return newElementWith(el, {
+              x:
+                el.x +
+                deltaX / this.state.zoom.value -
+                (width - el.width) * pinch!.focalPoint.xFactor,
+              y:
+                el.y +
+                deltaY / this.state.zoom.value -
+                (height - el.height) * pinch!.focalPoint.yFactor,
+              width,
+              height,
+              ...(font && { fontSize: font.size, baseline: font.baseline }),
+            });
+          }),
+        );
+        return;
+      }
+
+      if (!this.shouldPreventPanOrZoom()) {
+        this.setState((state) => {
+          const zoomState = getStateForZoom(
+            {
+              viewportX: center.x,
+              viewportY: center.y,
+              nextZoom,
+            },
+            state,
+          );
+
+          return {
+            zoom: zoomState.zoom,
+            scrollX: zoomState.scrollX + deltaX / nextZoom,
+            scrollY: zoomState.scrollY + deltaY / nextZoom,
+            shouldCacheIgnoreZoom: true,
+          };
+        });
+        this.resetShouldCacheIgnoreZoomDebounced();
+      }
     } else {
       gesture.lastCenter =
         gesture.initialDistance =
@@ -4132,7 +4206,7 @@ class App extends React.Component<AppProps, AppState> {
 
     if (element.type === "selection") {
       this.setState({
-        selectionElement: element,
+        selectionElement: gesture.pointers.size === 1 ? element : null,
         draggingElement: element,
       });
     } else {
@@ -4199,6 +4273,15 @@ class App extends React.Component<AppProps, AppState> {
       }
 
       const pointerCoords = viewportCoordsToSceneCoords(event, this.state);
+
+      // if (gesture.pointers.size > 1) {
+      //   pointerCoords = {
+      //     x: gesture.lastCenter!.x / this.state.zoom.value,
+      //     y: gesture.lastCenter!.y / this.state.zoom.value,
+      //   };
+      // } else {
+      //   // return;
+      // }
 
       if (isEraserActive(this.state)) {
         this.handleEraser(event, pointerDownState, pointerCoords);

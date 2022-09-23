@@ -39,6 +39,7 @@ const ExcalidrawBase = (props: ExcalidrawProps) => {
     onPointerDown,
     onScrollChange,
     defaultCanvasSize,
+    alternativeGestures,
   } = props;
 
   const canvasActions = props.UIOptions?.canvasActions;
@@ -113,6 +114,7 @@ const ExcalidrawBase = (props: ExcalidrawProps) => {
           onPointerDown={onPointerDown}
           onScrollChange={onScrollChange}
           defaultCanvasSize={defaultCanvasSize}
+          alternativeGestures={alternativeGestures}
         />
       </Provider>
     </InitializeApp>
