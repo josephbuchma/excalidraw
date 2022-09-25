@@ -715,7 +715,7 @@ const ExcalidrawWrapper = () => {
 
   return (
     <div
-      style={{ height: "100%" }}
+      style={{ height: "100%", width: "100%" }}
       className={clsx("excalidraw-app", {
         "is-collaborating": isCollaborating,
       })}
@@ -760,6 +760,10 @@ const ExcalidrawWrapper = () => {
         onLibraryChange={onLibraryChange}
         autoFocus={true}
         theme={theme}
+        defaultCanvasSize={{ width: 600, height: 800, autoZoom: true }}
+        alternativeGestures={{
+          pinchResize: ["rectangle", "diamond", "ellipse", "image", "text"],
+        }}
       />
       {excalidrawAPI && <Collab excalidrawAPI={excalidrawAPI} />}
       {errorMessage && (

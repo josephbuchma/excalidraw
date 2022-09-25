@@ -19,6 +19,7 @@ export const getDefaultAppState = (): Omit<
   "offsetTop" | "offsetLeft" | "width" | "height"
 > => {
   return {
+    canvasSize: { mode: "default" },
     theme: THEME.LIGHT,
     collaborators: new Map(),
     currentChartType: "bar",
@@ -37,7 +38,9 @@ export const getDefaultAppState = (): Omit<
     currentItemStrokeWidth: 1,
     currentItemTextAlign: DEFAULT_TEXT_ALIGN,
     cursorButton: "up",
+    fixedCanvasFrameElement: null,
     draggingElement: null,
+    pinchState: null,
     editingElement: null,
     editingGroupId: null,
     editingLinearElement: null,
@@ -110,6 +113,7 @@ const APP_STATE_STORAGE_CONF = (<
   T extends Record<keyof AppState, Values>,
 >(config: { [K in keyof T]: K extends keyof AppState ? T[K] : never }) =>
   config)({
+  canvasSize: { browser: true, export: true, server: true },
   theme: { browser: true, export: false, server: false },
   collaborators: { browser: false, export: false, server: false },
   currentChartType: { browser: true, export: false, server: false },
@@ -132,11 +136,13 @@ const APP_STATE_STORAGE_CONF = (<
   currentItemStrokeWidth: { browser: true, export: false, server: false },
   currentItemTextAlign: { browser: true, export: false, server: false },
   cursorButton: { browser: true, export: false, server: false },
+  fixedCanvasFrameElement: { browser: false, export: false, server: false },
   draggingElement: { browser: false, export: false, server: false },
   editingElement: { browser: false, export: false, server: false },
   editingGroupId: { browser: true, export: false, server: false },
   editingLinearElement: { browser: false, export: false, server: false },
   activeTool: { browser: true, export: false, server: false },
+  pinchState: { browser: false, export: false, server: false },
   penMode: { browser: true, export: false, server: false },
   penDetected: { browser: true, export: false, server: false },
   errorMessage: { browser: false, export: false, server: false },

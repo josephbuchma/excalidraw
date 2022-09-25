@@ -157,6 +157,7 @@ import {
   isSelectedViaGroup,
   selectGroupsForSelectedElements,
 } from "../groups";
+import { adjustAppStateForCanvasSize } from "../canvas-size";
 import History from "../history";
 import { defaultLang, getLanguage, languages, setLanguage, t } from "../i18n";
 import {
@@ -264,6 +265,7 @@ import {
   isLocalLink,
 } from "../element/Hyperlink";
 import { shouldShowBoundingBox } from "../element/transformHandles";
+import { measureFontSizeFromWH } from "../element/resizeElements";
 
 const deviceContextInitialValue = {
   isSmScreen: false,
@@ -366,21 +368,26 @@ class App extends React.Component<AppProps, AppState> {
       gridModeEnabled = false,
       theme = defaultAppState.theme,
       name = defaultAppState.name,
+      defaultCanvasSize,
     } = props;
-    this.state = {
-      ...defaultAppState,
-      theme,
-      isLoading: true,
-      ...this.getCanvasOffsets(),
-      viewModeEnabled,
-      zenModeEnabled,
-      gridSize: gridModeEnabled ? GRID_SIZE : null,
-      name,
-      width: window.innerWidth,
-      height: window.innerHeight,
-      showHyperlinkPopup: false,
-      isLibraryMenuDocked: false,
-    };
+
+    this.state = adjustAppStateForCanvasSize(
+      {
+        ...defaultAppState,
+        theme,
+        isLoading: true,
+        ...this.getCanvasOffsets(),
+        viewModeEnabled,
+        zenModeEnabled,
+        gridSize: gridModeEnabled ? GRID_SIZE : null,
+        name,
+        width: window.innerWidth,
+        height: window.innerHeight,
+        showHyperlinkPopup: false,
+        isLibraryMenuDocked: false,
+      },
+      defaultCanvasSize,
+    );
 
     this.id = nanoid();
 
@@ -511,6 +518,8 @@ class App extends React.Component<AppProps, AppState> {
         className={clsx("excalidraw excalidraw-container", {
           "excalidraw--view-mode": this.state.viewModeEnabled,
           "excalidraw--mobile": this.device.isMobile,
+          "excalidraw--fixed-size-canvas":
+            this.state.canvasSize.mode === "fixed",
         })}
         ref={this.excalidrawContainerRef}
         onDrop={this.handleAppOnDrop}
@@ -662,18 +671,22 @@ class App extends React.Component<AppProps, AppState> {
         }
         this.setState(
           (state) => {
-            // using Object.assign instead of spread to fool TS 4.2.2+ into
-            // regarding the resulting type as not containing undefined
-            // (which the following expression will never contain)
-            return Object.assign(actionResult.appState || {}, {
-              editingElement:
-                editingElement || actionResult.appState?.editingElement || null,
-              viewModeEnabled,
-              zenModeEnabled,
-              gridSize,
-              theme,
-              name,
-            });
+            return adjustAppStateForCanvasSize(
+              {
+                ...state,
+                ...actionResult.appState,
+                editingElement:
+                  editingElement ||
+                  actionResult.appState?.editingElement ||
+                  null,
+                viewModeEnabled,
+                zenModeEnabled,
+                gridSize,
+                theme,
+                name,
+              },
+              this.props.defaultCanvasSize,
+            );
           },
           () => {
             if (actionResult.syncHistory) {
@@ -725,8 +738,12 @@ class App extends React.Component<AppProps, AppState> {
       this.scene.replaceAllElements([]);
       this.setState((state) => ({
         ...getDefaultAppState(),
+        canvasSize: this.props.defaultCanvasSize
+          ? { mode: "fixed", ...this.props.defaultCanvasSize }
+          : { mode: "infinite" },
         isLoading: opts?.resetLoadingState ? false : state.isLoading,
         theme: this.state.theme,
+        zoom: this.state.zoom,
       }));
       this.resetHistory();
     },
@@ -795,6 +812,7 @@ class App extends React.Component<AppProps, AppState> {
       isLoading: false,
       toast: this.state.toast,
     };
+
     if (initialData?.scrollToContent) {
       scene.appState = {
         ...scene.appState,
@@ -896,6 +914,7 @@ class App extends React.Component<AppProps, AppState> {
         this.updateDOMRect();
       });
       this.resizeObserver?.observe(this.excalidrawContainerRef.current);
+      this.resizeObserver?.observe(window.document.body);
     } else if (window.matchMedia) {
       const mdScreenQuery = window.matchMedia(
         `(max-width: ${MQ_MAX_WIDTH_PORTRAIT}px), (max-height: ${MQ_MAX_HEIGHT_LANDSCAPE}px) and (max-width: ${MQ_MAX_WIDTH_LANDSCAPE}px)`,
@@ -1026,22 +1045,25 @@ class App extends React.Component<AppProps, AppState> {
     );
     // rerender text elements on font load to fix #637 && #1553
     document.fonts?.addEventListener?.("loadingdone", this.onFontLoaded);
-    // Safari-only desktop pinch zoom
-    document.addEventListener(
-      EVENT.GESTURE_START,
-      this.onGestureStart as any,
-      false,
-    );
-    document.addEventListener(
-      EVENT.GESTURE_CHANGE,
-      this.onGestureChange as any,
-      false,
-    );
-    document.addEventListener(
-      EVENT.GESTURE_END,
-      this.onGestureEnd as any,
-      false,
-    );
+
+    if (!this.shouldPreventPanOrZoom()) {
+      // Safari-only desktop pinch zoom
+      document.addEventListener(
+        EVENT.GESTURE_START,
+        this.onGestureStart as any,
+        false,
+      );
+      document.addEventListener(
+        EVENT.GESTURE_CHANGE,
+        this.onGestureChange as any,
+        false,
+      );
+      document.addEventListener(
+        EVENT.GESTURE_END,
+        this.onGestureEnd as any,
+        false,
+      );
+    }
     if (this.state.viewModeEnabled) {
       return;
     }
@@ -1286,6 +1308,7 @@ class App extends React.Component<AppProps, AppState> {
           imageCache: this.imageCache,
           isExporting: false,
           renderScrollbars: !this.device.isMobile,
+          canvasSize: this.state.canvasSize,
         },
         callback: ({ atLeastOneVisibleElement, scrollBars }) => {
           if (scrollBars) {
@@ -2258,14 +2281,16 @@ class App extends React.Component<AppProps, AppState> {
       preferSelected?: boolean;
       includeBoundTextElement?: boolean;
       includeLockedElements?: boolean;
+      filter?: (el: ExcalidrawElement) => boolean;
     },
   ): NonDeleted<ExcalidrawElement> | null {
+    const filter = opts?.filter || ((el: ExcalidrawElement) => true);
     const allHitElements = this.getElementsAtPosition(
       x,
       y,
       opts?.includeBoundTextElement,
       opts?.includeLockedElements,
-    );
+    ).filter(filter);
     if (allHitElements.length > 1) {
       if (opts?.preferSelected) {
         for (let index = allHitElements.length - 1; index > -1; index--) {
@@ -2634,6 +2659,41 @@ class App extends React.Component<AppProps, AppState> {
     }
   };
 
+  private getOrCreatePinch(pos: { x: number; y: number }) {
+    if (!this.props.alternativeGestures?.pinchResize) {
+      return [null, null] as const;
+    }
+    if (
+      this.state.pinchState?.pointersChecksum ===
+      [...gesture.pointers.keys()].reduce((v, a) => a + v, 0)
+    ) {
+      return [
+        this.state.pinchState,
+        this.scene.getElement(this.state.pinchState.elSnap.id),
+      ] as const;
+    }
+    const elem = this.getElementAtPosition(pos.x, pos.y, {
+      filter: (el) =>
+        this.props.alternativeGestures!.pinchResize!.includes(el.type),
+    });
+    if (
+      !elem ||
+      !this.props.alternativeGestures?.pinchResize?.includes(elem.type)
+    ) {
+      return [null, null] as const;
+    }
+    const pinch = {
+      elSnap: elem,
+      focalPoint: {
+        xFactor: elem.type === "image" ? (pos.x - elem.x) / elem.width : 0.5,
+        yFactor: elem.type === "image" ? (pos.y - elem.y) / elem.height : 0.5,
+      },
+      pointersChecksum: [...gesture.pointers.keys()].reduce((v, a) => a + v, 0),
+    };
+    this.setState({ pinchState: pinch });
+    return [pinch, elem] as const;
+  }
+
   private handleCanvasPointerMove = (
     event: React.PointerEvent<HTMLCanvasElement>,
   ) => {
@@ -2645,11 +2705,12 @@ class App extends React.Component<AppProps, AppState> {
       });
     }
 
-    const initialScale = gesture.initialScale;
+    const { initialScale, lastCenter } = gesture;
     if (
       gesture.pointers.size === 2 &&
       gesture.lastCenter &&
       initialScale &&
+      lastCenter &&
       gesture.initialDistance
     ) {
       const center = getCenter(gesture.pointers);
@@ -2667,24 +2728,68 @@ class App extends React.Component<AppProps, AppState> {
         ? getNormalizedZoom(initialScale * scaleFactor)
         : this.state.zoom.value;
 
-      this.setState((state) => {
-        const zoomState = getStateForZoom(
-          {
-            viewportX: center.x,
-            viewportY: center.y,
-            nextZoom,
-          },
-          state,
+      if (this.props.alternativeGestures?.pinchResize) {
+        const pos = viewportCoordsToSceneCoords(
+          { clientX: center.x, clientY: center.y },
+          this.state,
         );
 
-        return {
-          zoom: zoomState.zoom,
-          scrollX: zoomState.scrollX + deltaX / nextZoom,
-          scrollY: zoomState.scrollY + deltaY / nextZoom,
-          shouldCacheIgnoreZoom: true,
-        };
-      });
-      this.resetShouldCacheIgnoreZoomDebounced();
+        const [pinch, elem] = this.getOrCreatePinch(pos);
+
+        if (!elem || !pinch) {
+          return;
+        }
+
+        this.scene.replaceAllElements(
+          this.scene.getNonDeletedElements().map((el) => {
+            if (el.id !== elem.id) {
+              return el;
+            }
+            const width = pinch.elSnap.width * scaleFactor;
+            const height = pinch.elSnap.height * scaleFactor;
+            const font =
+              el.type === "text" &&
+              !el.isDeleted &&
+              pinch.elSnap.type === "text" &&
+              measureFontSizeFromWH(el, width, height);
+            return newElementWith(el, {
+              x:
+                el.x +
+                deltaX / this.state.zoom.value -
+                (width - el.width) * pinch.focalPoint.xFactor,
+              y:
+                el.y +
+                deltaY / this.state.zoom.value -
+                (height - el.height) * pinch.focalPoint.yFactor,
+              width,
+              height,
+              ...(font && { fontSize: font.size, baseline: font.baseline }),
+            });
+          }),
+        );
+        return;
+      }
+
+      if (!this.shouldPreventPanOrZoom()) {
+        this.setState((state) => {
+          const zoomState = getStateForZoom(
+            {
+              viewportX: center.x,
+              viewportY: center.y,
+              nextZoom,
+            },
+            state,
+          );
+
+          return {
+            zoom: zoomState.zoom,
+            scrollX: zoomState.scrollX + deltaX / nextZoom,
+            scrollY: zoomState.scrollY + deltaY / nextZoom,
+            shouldCacheIgnoreZoom: true,
+          };
+        });
+        this.resetShouldCacheIgnoreZoomDebounced();
+      }
     } else {
       gesture.lastCenter =
         gesture.initialDistance =
@@ -2854,6 +2959,10 @@ class App extends React.Component<AppProps, AppState> {
       return;
     }
 
+    if (this.isPointerOutsideCanvas({ x: scenePointerX, y: scenePointerY })) {
+      return;
+    }
+
     const elements = this.scene.getNonDeletedElements();
 
     const selectedElements = getSelectedElements(elements, this.state);
@@ -2932,7 +3041,11 @@ class App extends React.Component<AppProps, AppState> {
           isTextElement(hitElement) ? CURSOR_TYPE.TEXT : CURSOR_TYPE.CROSSHAIR,
         );
       } else if (this.state.viewModeEnabled) {
-        setCursor(this.canvas, CURSOR_TYPE.GRAB);
+        if (this.shouldPreventPanOrZoom()) {
+          setCursor(this.canvas, CURSOR_TYPE.AUTO);
+        } else {
+          setCursor(this.canvas, CURSOR_TYPE.GRAB);
+        }
       } else if (isOverScrollBar) {
         setCursor(this.canvas, CURSOR_TYPE.AUTO);
       } else if (this.state.selectedLinearElement) {
@@ -3210,11 +3323,12 @@ class App extends React.Component<AppProps, AppState> {
     }
 
     const allowOnPointerDown =
-      !this.state.penMode ||
-      event.pointerType !== "touch" ||
-      this.state.activeTool.type === "selection" ||
-      this.state.activeTool.type === "text" ||
-      this.state.activeTool.type === "image";
+      (!this.state.penMode ||
+        event.pointerType !== "touch" ||
+        this.state.activeTool.type === "selection" ||
+        this.state.activeTool.type === "text" ||
+        this.state.activeTool.type === "image") &&
+      !this.isPointerOutsideCanvas(pointerDownState.origin);
 
     if (!allowOnPointerDown) {
       return;
@@ -3378,7 +3492,8 @@ class App extends React.Component<AppProps, AppState> {
           (event.button === POINTER_BUTTON.MAIN && isHoldingSpace) ||
           this.state.viewModeEnabled)
       ) ||
-      isTextElement(this.state.editingElement)
+      isTextElement(this.state.editingElement) ||
+      this.shouldPreventPanOrZoom()
     ) {
       return false;
     }
@@ -3597,6 +3712,18 @@ class App extends React.Component<AppProps, AppState> {
     }
   };
 
+  private isPointerOutsideCanvas({ x, y }: { x: number; y: number }): boolean {
+    if (this.state.canvasSize.mode !== "fixed") {
+      return false;
+    }
+    return (
+      x < 0 ||
+      x > this.state.canvasSize.width ||
+      y < 0 ||
+      y > this.state.canvasSize.height
+    );
+  }
+
   /**
    * @returns whether the pointer event has been completely handled
    */
@@ -3604,8 +3731,15 @@ class App extends React.Component<AppProps, AppState> {
     event: React.PointerEvent<HTMLCanvasElement>,
     pointerDownState: PointerDownState,
   ): boolean => {
+    if (this.state.viewModeEnabled && this.shouldPreventPanOrZoom()) {
+      return true;
+    }
     if (this.state.activeTool.type === "selection") {
       const elements = this.scene.getNonDeletedElements();
+      if (this.isPointerOutsideCanvas(pointerDownState.origin)) {
+        this.clearSelection(null);
+        return false;
+      }
       const selectedElements = getSelectedElements(elements, this.state);
       if (selectedElements.length === 1 && !this.state.editingLinearElement) {
         const elementWithTransformHandleType =
@@ -4080,7 +4214,7 @@ class App extends React.Component<AppProps, AppState> {
 
     if (element.type === "selection") {
       this.setState({
-        selectionElement: element,
+        selectionElement: gesture.pointers.size === 1 ? element : null,
         draggingElement: element,
       });
     } else {
@@ -4147,6 +4281,15 @@ class App extends React.Component<AppProps, AppState> {
       }
 
       const pointerCoords = viewportCoordsToSceneCoords(event, this.state);
+
+      // if (gesture.pointers.size > 1) {
+      //   pointerCoords = {
+      //     x: gesture.lastCenter!.x / this.state.zoom.value,
+      //     y: gesture.lastCenter!.y / this.state.zoom.value,
+      //   };
+      // } else {
+      //   // return;
+      // }
 
       if (isEraserActive(this.state)) {
         this.handleEraser(event, pointerDownState, pointerCoords);
@@ -6034,9 +6177,15 @@ class App extends React.Component<AppProps, AppState> {
     }
   };
 
+  private shouldPreventPanOrZoom(): boolean {
+    const { canvasSize: cs } = this.state;
+    return cs.mode === "fixed" && !!cs.autoZoom;
+  }
+
   private handleWheel = withBatchedUpdates((event: WheelEvent) => {
     event.preventDefault();
-    if (isPanning) {
+
+    if (isPanning || this.shouldPreventPanOrZoom()) {
       return;
     }
 
@@ -6179,12 +6328,16 @@ class App extends React.Component<AppProps, AppState> {
       }
 
       this.setState(
-        {
-          width,
-          height,
-          offsetLeft,
-          offsetTop,
-        },
+        adjustAppStateForCanvasSize(
+          {
+            ...this.state,
+            width,
+            height,
+            offsetLeft,
+            offsetTop,
+          },
+          this.props.defaultCanvasSize,
+        ),
         () => {
           cb && cb();
         },
