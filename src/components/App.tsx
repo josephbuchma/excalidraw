@@ -2657,6 +2657,41 @@ class App extends React.Component<AppProps, AppState> {
     }
   };
 
+  private getOrCreatePinch(pos: { x: number; y: number }) {
+    if (!this.props.alternativeGestures?.pinchResize) {
+      return [null, null] as const;
+    }
+    if (
+      this.state.pinchState?.pointersChecksum ===
+      [...gesture.pointers.keys()].reduce((v, a) => a + v, 0)
+    ) {
+      return [
+        this.state.pinchState,
+        this.scene.getElement(this.state.pinchState.elSnap.id),
+      ] as const;
+    }
+    const elem = this.getElementAtPosition(pos.x, pos.y, {
+      filter: (el) =>
+        this.props.alternativeGestures!.pinchResize!.includes(el.type),
+    });
+    if (
+      !elem ||
+      !this.props.alternativeGestures?.pinchResize?.includes(elem.type)
+    ) {
+      return [null, null] as const;
+    }
+    const pinch = {
+      elSnap: elem,
+      focalPoint: {
+        xFactor: elem.type === "image" ? (pos.x - elem.x) / elem.width : 0.5,
+        yFactor: elem.type === "image" ? (pos.y - elem.y) / elem.height : 0.5,
+      },
+      pointersChecksum: [...gesture.pointers.keys()].reduce((v, a) => a + v, 0),
+    };
+    this.setState({ pinchState: pinch });
+    return [pinch, elem] as const;
+  }
+
   private handleCanvasPointerMove = (
     event: React.PointerEvent<HTMLCanvasElement>,
   ) => {
@@ -2697,38 +2732,9 @@ class App extends React.Component<AppProps, AppState> {
           this.state,
         );
 
-        let pinch = this.state.pinchState;
-        if (
-          !pinch ||
-          !pinch.pointers
-            .map((v) => gesture.pointers.has(v))
-            .reduce((v, a) => v && a, true)
-        ) {
-          const elem = this.getElementAtPosition(pos.x, pos.y, {
-            filter: (el) =>
-              this.props.alternativeGestures!.pinchResize!.includes(el.type),
-          });
-          if (
-            !elem ||
-            !this.props.alternativeGestures.pinchResize.includes(elem.type)
-          ) {
-            return;
-          }
-          pinch = {
-            elSnap: elem,
-            focalPoint: {
-              xFactor:
-                elem.type === "image" ? (pos.x - elem.x) / elem.width : 0.5,
-              yFactor:
-                elem.type === "image" ? (pos.y - elem.y) / elem.height : 0.5,
-            },
-            pointers: [...gesture.pointers.keys()] as [number, number],
-          };
-          this.setState({ pinchState: pinch });
-        }
+        const [pinch, elem] = this.getOrCreatePinch(pos);
 
-        const elem = this.scene.getElement(pinch.elSnap.id);
-        if (!elem) {
+        if (!elem || !pinch) {
           return;
         }
 
@@ -2737,22 +2743,22 @@ class App extends React.Component<AppProps, AppState> {
             if (el.id !== elem.id) {
               return el;
             }
-            const width = pinch!.elSnap.width * scaleFactor;
-            const height = pinch!.elSnap.height * scaleFactor;
+            const width = pinch.elSnap.width * scaleFactor;
+            const height = pinch.elSnap.height * scaleFactor;
             const font =
               el.type === "text" &&
               !el.isDeleted &&
-              pinch!.elSnap.type === "text" &&
+              pinch.elSnap.type === "text" &&
               measureFontSizeFromWH(el, width, height);
             return newElementWith(el, {
               x:
                 el.x +
                 deltaX / this.state.zoom.value -
-                (width - el.width) * pinch!.focalPoint.xFactor,
+                (width - el.width) * pinch.focalPoint.xFactor,
               y:
                 el.y +
                 deltaY / this.state.zoom.value -
-                (height - el.height) * pinch!.focalPoint.yFactor,
+                (height - el.height) * pinch.focalPoint.yFactor,
               width,
               height,
               ...(font && { fontSize: font.size, baseline: font.baseline }),

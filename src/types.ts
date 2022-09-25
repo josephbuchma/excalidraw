@@ -139,7 +139,7 @@ export type AppState = {
   currentItemLinearStrokeSharpness: ExcalidrawElement["strokeSharpness"];
   pinchState: {
     elSnap: ExcalidrawElement;
-    pointers: [number, number];
+    pointersChecksum: number;
     focalPoint: { xFactor: number; yFactor: number };
   } | null;
   viewBackgroundColor: string;
@@ -332,7 +332,6 @@ export interface ExcalidrawProps {
   onScrollChange?: (scrollX: number, scrollY: number) => void;
   defaultCanvasSize?: { width: number; height: number; autoZoom?: boolean };
   alternativeGestures?: {
-    // TODO: make it work with array of element types which should respond to pinching.
     pinchResize?: Array<ExcalidrawElement["type"]>;
     noSelectTool?: boolean;
   };
