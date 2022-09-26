@@ -334,6 +334,7 @@ export interface ExcalidrawProps {
   alternativeGestures?: {
     pinchResize?: Array<ExcalidrawElement["type"]>;
     disableGroupSelect?: boolean;
+    disableTransformUI?: { touch?: boolean; mouse?: boolean };
   };
 }
 

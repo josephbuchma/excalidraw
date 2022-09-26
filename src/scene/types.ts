@@ -29,6 +29,8 @@ export type RenderConfig = {
   isExporting: boolean;
 
   canvasSize: CanvasSize;
+
+  disableTransformUI?: boolean;
 };
 
 export type SceneScroll = {

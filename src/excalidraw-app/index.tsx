@@ -764,6 +764,7 @@ const ExcalidrawWrapper = () => {
         alternativeGestures={{
           pinchResize: ["rectangle", "diamond", "ellipse", "image", "text"],
           disableGroupSelect: true,
+          disableTransformUI: { touch: true },
         }}
       />
       {excalidrawAPI && <Collab excalidrawAPI={excalidrawAPI} />}

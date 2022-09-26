@@ -1309,6 +1309,10 @@ class App extends React.Component<AppProps, AppState> {
           isExporting: false,
           renderScrollbars: !this.device.isMobile,
           canvasSize: this.state.canvasSize,
+          disableTransformUI: Boolean(
+            this.lastPointerDown &&
+              this.shouldDisableTransformUI(this.lastPointerDown),
+          ),
         },
         callback: ({ atLeastOneVisibleElement, scrollBars }) => {
           if (scrollBars) {
@@ -3724,6 +3728,17 @@ class App extends React.Component<AppProps, AppState> {
     );
   }
 
+  private shouldDisableTransformUI(
+    event: React.PointerEvent<HTMLCanvasElement>,
+  ): boolean {
+    return Boolean(
+      (this.props.alternativeGestures?.disableTransformUI?.touch &&
+        event.pointerType === "touch") ||
+        (this.props.alternativeGestures?.disableTransformUI?.mouse &&
+          event.pointerType === "mouse"),
+    );
+  }
+
   /**
    * @returns whether the pointer event has been completely handled
    */
@@ -3751,7 +3766,10 @@ class App extends React.Component<AppProps, AppState> {
             this.state.zoom,
             event.pointerType,
           );
-        if (elementWithTransformHandleType != null) {
+        if (
+          elementWithTransformHandleType != null &&
+          !this.shouldDisableTransformUI(event)
+        ) {
           this.setState({
             resizingElement: elementWithTransformHandleType.element,
           });

@@ -504,7 +504,7 @@ export const _renderScene = ({
           locallySelectedElements[0] as ExcalidrawLinearElement,
         );
       }
-      if (showBoundingBox) {
+      if (showBoundingBox && !renderConfig.disableTransformUI) {
         const selections = elements.reduce((acc, element) => {
           const selectionColors = [];
           // local user
@@ -573,61 +573,63 @@ export const _renderScene = ({
           ),
         );
       }
-      // Paint resize transformHandles
-      context.save();
-      context.translate(renderConfig.scrollX, renderConfig.scrollY);
+      if (!renderConfig.disableTransformUI) {
+        // Paint resize transformHandles
+        context.save();
+        context.translate(renderConfig.scrollX, renderConfig.scrollY);
 
-      if (locallySelectedElements.length === 1) {
-        context.fillStyle = oc.white;
-        const transformHandles = getTransformHandles(
-          locallySelectedElements[0],
-          renderConfig.zoom,
-          "mouse", // when we render we don't know which pointer type so use mouse
-        );
-        if (!appState.viewModeEnabled && showBoundingBox) {
-          renderTransformHandles(
-            context,
-            renderConfig,
-            transformHandles,
-            locallySelectedElements[0].angle,
+        if (locallySelectedElements.length === 1) {
+          context.fillStyle = oc.white;
+          const transformHandles = getTransformHandles(
+            locallySelectedElements[0],
+            renderConfig.zoom,
+            "mouse", // when we render we don't know which pointer type so use mouse
           );
+          if (!appState.viewModeEnabled && showBoundingBox) {
+            renderTransformHandles(
+              context,
+              renderConfig,
+              transformHandles,
+              locallySelectedElements[0].angle,
+            );
+          }
+        } else if (locallySelectedElements.length > 1 && !appState.isRotating) {
+          const dashedLinePadding = 4 / renderConfig.zoom.value;
+          context.fillStyle = oc.white;
+          const [x1, y1, x2, y2] = getCommonBounds(locallySelectedElements);
+          const initialLineDash = context.getLineDash();
+          context.setLineDash([2 / renderConfig.zoom.value]);
+          const lineWidth = context.lineWidth;
+          context.lineWidth = 1 / renderConfig.zoom.value;
+          strokeRectWithRotation(
+            context,
+            x1 - dashedLinePadding,
+            y1 - dashedLinePadding,
+            x2 - x1 + dashedLinePadding * 2,
+            y2 - y1 + dashedLinePadding * 2,
+            (x1 + x2) / 2,
+            (y1 + y2) / 2,
+            0,
+          );
+          context.lineWidth = lineWidth;
+          context.setLineDash(initialLineDash);
+          const transformHandles = getTransformHandlesFromCoords(
+            [x1, y1, x2, y2],
+            0,
+            renderConfig.zoom,
+            "mouse",
+            OMIT_SIDES_FOR_MULTIPLE_ELEMENTS,
+          );
+          if (locallySelectedElements.some((element) => !element.locked)) {
+            renderTransformHandles(context, renderConfig, transformHandles, 0);
+          }
         }
-      } else if (locallySelectedElements.length > 1 && !appState.isRotating) {
-        const dashedLinePadding = 4 / renderConfig.zoom.value;
-        context.fillStyle = oc.white;
-        const [x1, y1, x2, y2] = getCommonBounds(locallySelectedElements);
-        const initialLineDash = context.getLineDash();
-        context.setLineDash([2 / renderConfig.zoom.value]);
-        const lineWidth = context.lineWidth;
-        context.lineWidth = 1 / renderConfig.zoom.value;
-        strokeRectWithRotation(
-          context,
-          x1 - dashedLinePadding,
-          y1 - dashedLinePadding,
-          x2 - x1 + dashedLinePadding * 2,
-          y2 - y1 + dashedLinePadding * 2,
-          (x1 + x2) / 2,
-          (y1 + y2) / 2,
-          0,
-        );
-        context.lineWidth = lineWidth;
-        context.setLineDash(initialLineDash);
-        const transformHandles = getTransformHandlesFromCoords(
-          [x1, y1, x2, y2],
-          0,
-          renderConfig.zoom,
-          "mouse",
-          OMIT_SIDES_FOR_MULTIPLE_ELEMENTS,
-        );
-        if (locallySelectedElements.some((element) => !element.locked)) {
-          renderTransformHandles(context, renderConfig, transformHandles, 0);
-        }
+        context.restore();
       }
+
+      // Reset zoom
       context.restore();
     }
-
-    // Reset zoom
-    context.restore();
 
     // Paint remote pointers
     for (const clientId in renderConfig.remotePointerViewportCoords) {
