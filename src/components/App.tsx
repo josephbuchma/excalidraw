@@ -3853,9 +3853,10 @@ class App extends React.Component<AppProps, AppState> {
             this.isASelectedElement(element),
           );
         if (
-          (hitElement === null || !someHitElementIsSelected) &&
-          !event.shiftKey &&
-          !pointerDownState.hit.hasHitCommonBoundingBoxOfSelectedElements
+          this.props.alternativeGestures?.disableGroupSelect ||
+          ((hitElement === null || !someHitElementIsSelected) &&
+            !event.shiftKey &&
+            !pointerDownState.hit.hasHitCommonBoundingBoxOfSelectedElements)
         ) {
           this.clearSelection(hitElement);
         }
@@ -4213,6 +4214,9 @@ class App extends React.Component<AppProps, AppState> {
     });
 
     if (element.type === "selection") {
+      if (this.props.alternativeGestures?.disableGroupSelect) {
+        return;
+      }
       this.setState({
         selectionElement: gesture.pointers.size === 1 ? element : null,
         draggingElement: element,
@@ -5836,7 +5840,7 @@ class App extends React.Component<AppProps, AppState> {
 
     const { x, y } = viewportCoordsToSceneCoords(event, this.state);
     const element = this.getElementAtPosition(x, y, {
-      preferSelected: true,
+      preferSelected: !this.props.alternativeGestures?.disableGroupSelect,
       includeLockedElements: true,
     });
 
