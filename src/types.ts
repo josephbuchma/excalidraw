@@ -333,7 +333,7 @@ export interface ExcalidrawProps {
   defaultCanvasSize?: { width: number; height: number; autoZoom?: boolean };
   alternativeGestures?: {
     pinchResize?: Array<ExcalidrawElement["type"]>;
-    noSelectTool?: boolean;
+    disableGroupSelect?: boolean;
   };
 }
 
