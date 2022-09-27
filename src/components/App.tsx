@@ -2673,7 +2673,7 @@ class App extends React.Component<AppProps, AppState> {
     ) {
       return [
         this.state.pinchState,
-        this.scene.getElement(this.state.pinchState.elSnap.id),
+        this.scene.getNonDeletedElement(this.state.pinchState.elSnap.id),
       ] as const;
     }
     const elem = this.getElementAtPosition(pos.x, pos.y, {
@@ -3441,6 +3441,11 @@ class App extends React.Component<AppProps, AppState> {
     }
 
     this.removePointer(event);
+
+    if (this.state.pinchState && gesture.pointers.size < 2) {
+      this.setState({ pinchState: null });
+      this.history.resumeRecording();
+    }
   };
 
   private maybeOpenContextMenuAfterPointerDownOnTouchDevices = (
