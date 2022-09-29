@@ -2686,12 +2686,17 @@ class App extends React.Component<AppProps, AppState> {
     ) {
       return [null, null] as const;
     }
-    const pinch = {
+
+    const pinch: AppState["pinchState"] = {
       elSnap: elem,
-      focalPoint: {
-        xFactor: elem.type === "image" ? (pos.x - elem.x) / elem.width : 0.5,
-        yFactor: elem.type === "image" ? (pos.y - elem.y) / elem.height : 0.5,
-      },
+      boundTextElSnap: getBoundTextElement(elem),
+      focalPoint:
+        elem.type === "image"
+          ? {
+              xFactor: (pos.x - elem.x) / elem.width,
+              yFactor: (pos.y - elem.y) / elem.height,
+            }
+          : { xFactor: 0.5, yFactor: 0.5 },
       pointersChecksum: [...gesture.pointers.keys()].reduce((v, a) => a + v, 0),
     };
     this.setState({ pinchState: pinch });
@@ -2746,15 +2751,16 @@ class App extends React.Component<AppProps, AppState> {
 
         this.scene.replaceAllElements(
           this.scene.getNonDeletedElements().map((el) => {
-            if (el.id !== elem.id) {
+            if (el.id !== elem.id && pinch.boundTextElSnap?.id !== el.id) {
               return el;
             }
-            const width = pinch.elSnap.width * scaleFactor;
-            const height = pinch.elSnap.height * scaleFactor;
+            const elSnap =
+              el.id === pinch.elSnap.id ? pinch.elSnap : pinch.boundTextElSnap!;
+            const width = elSnap.width * scaleFactor;
+            const height = elSnap.height * scaleFactor;
             const font =
               el.type === "text" &&
               !el.isDeleted &&
-              pinch.elSnap.type === "text" &&
               measureFontSizeFromWH(el, width, height);
             return newElementWith(el, {
               x:
@@ -2771,6 +2777,7 @@ class App extends React.Component<AppProps, AppState> {
             });
           }),
         );
+        updateBoundElements(elem);
         return;
       }
 

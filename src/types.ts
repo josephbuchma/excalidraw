@@ -13,6 +13,7 @@ import {
   FileId,
   ExcalidrawImageElement,
   Theme,
+  ExcalidrawTextElement,
 } from "./element/types";
 import { SHAPES } from "./shapes";
 import { Point as RoughPoint } from "roughjs/bin/geometry";
@@ -139,6 +140,7 @@ export type AppState = {
   currentItemLinearStrokeSharpness: ExcalidrawElement["strokeSharpness"];
   pinchState: {
     elSnap: ExcalidrawElement;
+    boundTextElSnap: NonDeleted<ExcalidrawTextElement> | null;
     pointersChecksum: number;
     focalPoint: { xFactor: number; yFactor: number };
   } | null;
