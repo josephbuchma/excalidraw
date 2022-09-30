@@ -763,8 +763,8 @@ const ExcalidrawWrapper = () => {
         defaultCanvasSize={{ width: 600, height: 800, autoZoom: true }}
         alternativeGestures={{
           pinchResize: ["rectangle", "diamond", "ellipse", "image", "text"],
-          disableGroupSelect: true,
-          disableTransformUI: { touch: true },
+          disableGroupSelect: false,
+          disableTransformUI: { touch: false, mouse: false },
         }}
       />
       {excalidrawAPI && <Collab excalidrawAPI={excalidrawAPI} />}
