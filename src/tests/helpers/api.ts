@@ -123,6 +123,7 @@ export class API {
     const appState = h?.state || getDefaultAppState();
 
     const base = {
+      pageId: null,
       x,
       y,
       angle: rest.angle ?? 0,

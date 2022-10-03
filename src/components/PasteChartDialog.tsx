@@ -32,6 +32,7 @@ const ChartPreviewBtn = (props: {
       props.spreadsheet,
       0,
       0,
+      null,
     );
     setChartElements(elements);
     let svg: SVGSVGElement;

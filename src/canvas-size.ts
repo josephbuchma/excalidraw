@@ -45,6 +45,7 @@ export function adjustAppStateForCanvasSize(
           backgroundColor: viewBackgroundColor,
         })
       : newElement({
+          pageId: state.currentPageId,
           type: "rectangle",
           x: 0,
           y: 0,

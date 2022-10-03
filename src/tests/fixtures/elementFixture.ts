@@ -2,6 +2,7 @@ import { ExcalidrawElement } from "../../element/types";
 
 const elementBase: Omit<ExcalidrawElement, "type"> = {
   id: "vWrqOAfkind2qcm7LDAGZ",
+  pageId: null,
   x: 414,
   y: 237,
   width: 214,

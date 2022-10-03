@@ -67,6 +67,7 @@ const _newElementBase = <T extends ExcalidrawElement>(
 ) => {
   const element = {
     id: rest.id || randomId(),
+    pageId: rest.pageId,
     type,
     x,
     y,

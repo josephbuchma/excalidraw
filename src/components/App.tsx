@@ -267,6 +267,7 @@ import {
 } from "../element/Hyperlink";
 import { shouldShowBoundingBox } from "../element/transformHandles";
 import { measureFontSizeFromWH } from "../element/resizeElements";
+import { randomId } from "../random";
 
 const deviceContextInitialValue = {
   isSmScreen: false,
@@ -742,6 +743,8 @@ class App extends React.Component<AppProps, AppState> {
         canvasSize: this.props.defaultCanvasSize
           ? { mode: "fixed", ...this.props.defaultCanvasSize }
           : { mode: "infinite" },
+        documentMode: this.props.multiPageMode ? "multi-page" : "single-page",
+        currentPageId: this.props.multiPageMode ? randomId() : null,
         isLoading: opts?.resetLoadingState ? false : state.isLoading,
         theme: this.state.theme,
         zoom: this.state.zoom,
@@ -799,6 +802,12 @@ class App extends React.Component<AppProps, AppState> {
     const scene = restore(initialData, null, null);
     scene.appState = {
       ...scene.appState,
+      documentMode:
+        scene.appState.documentMode !== "default"
+          ? scene.appState.documentMode
+          : this.props.multiPageMode
+          ? "multi-page"
+          : "single-page",
       theme: this.props.theme || scene.appState.theme,
       // we're falling back to current (pre-init) state when deciding
       // whether to open the library, to handle a case where we
@@ -1624,6 +1633,7 @@ class App extends React.Component<AppProps, AppState> {
     const element = newTextElement({
       x,
       y,
+      pageId: this.state.currentPageId,
       strokeColor: this.state.currentItemStrokeColor,
       backgroundColor: this.state.currentItemBackgroundColor,
       fillStyle: this.state.currentItemFillStyle,
@@ -2436,6 +2446,7 @@ class App extends React.Component<AppProps, AppState> {
     const element = existingTextElement
       ? existingTextElement
       : newTextElement({
+          pageId: this.state.currentPageId,
           x: parentCenterPosition
             ? parentCenterPosition.elementCenterX
             : sceneX,
@@ -4043,6 +4054,7 @@ class App extends React.Component<AppProps, AppState> {
     );
 
     const element = newFreeDrawElement({
+      pageId: this.state.currentPageId,
       type: elementType,
       x: gridX,
       y: gridY,
@@ -4100,6 +4112,7 @@ class App extends React.Component<AppProps, AppState> {
     const [gridX, gridY] = getGridPoint(sceneX, sceneY, this.state.gridSize);
 
     const element = newImageElement({
+      pageId: this.state.currentPageId,
       type: "image",
       x: gridX,
       y: gridY,
@@ -4186,6 +4199,7 @@ class App extends React.Component<AppProps, AppState> {
           : [null, null];
 
       const element = newLinearElement({
+        pageId: this.state.currentPageId,
         type: elementType,
         x: gridX,
         y: gridY,
@@ -4237,6 +4251,7 @@ class App extends React.Component<AppProps, AppState> {
       this.state.gridSize,
     );
     const element = newElement({
+      pageId: this.state.currentPageId,
       type: elementType,
       x: gridX,
       y: gridY,

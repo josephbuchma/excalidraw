@@ -192,10 +192,12 @@ const chartXLabels = (
   y: number,
   groupId: string,
   backgroundColor: string,
+  pageId: string | null,
 ): ChartElements => {
   return (
     spreadsheet.labels?.map((label, index) => {
       return newTextElement({
+        pageId,
         groupIds: [groupId],
         backgroundColor,
         ...commonProps,
@@ -218,8 +220,10 @@ const chartYLabels = (
   y: number,
   groupId: string,
   backgroundColor: string,
+  pageId: string | null,
 ): ChartElements => {
   const minYLabel = newTextElement({
+    pageId,
     groupIds: [groupId],
     backgroundColor,
     ...commonProps,
@@ -230,6 +234,7 @@ const chartYLabels = (
   });
 
   const maxYLabel = newTextElement({
+    pageId,
     groupIds: [groupId],
     backgroundColor,
     ...commonProps,
@@ -248,9 +253,11 @@ const chartLines = (
   y: number,
   groupId: string,
   backgroundColor: string,
+  pageId: string | null,
 ): ChartElements => {
   const { chartWidth, chartHeight } = getChartDimentions(spreadsheet);
   const xLine = newLinearElement({
+    pageId,
     backgroundColor,
     groupIds: [groupId],
     ...commonProps,
@@ -267,6 +274,7 @@ const chartLines = (
   });
 
   const yLine = newLinearElement({
+    pageId,
     backgroundColor,
     groupIds: [groupId],
     ...commonProps,
@@ -283,6 +291,7 @@ const chartLines = (
   });
 
   const maxLine = newLinearElement({
+    pageId,
     backgroundColor,
     groupIds: [groupId],
     ...commonProps,
@@ -310,12 +319,14 @@ const chartBaseElements = (
   y: number,
   groupId: string,
   backgroundColor: string,
+  pageId: string | null,
   debug?: boolean,
 ): ChartElements => {
   const { chartWidth, chartHeight } = getChartDimentions(spreadsheet);
 
   const title = spreadsheet.title
     ? newTextElement({
+        pageId,
         backgroundColor,
         groupIds: [groupId],
         ...commonProps,
@@ -330,6 +341,7 @@ const chartBaseElements = (
 
   const debugRect = debug
     ? newElement({
+        pageId,
         backgroundColor,
         groupIds: [groupId],
         ...commonProps,
@@ -347,9 +359,9 @@ const chartBaseElements = (
   return [
     ...(debugRect ? [debugRect] : []),
     ...(title ? [title] : []),
-    ...chartXLabels(spreadsheet, x, y, groupId, backgroundColor),
-    ...chartYLabels(spreadsheet, x, y, groupId, backgroundColor),
-    ...chartLines(spreadsheet, x, y, groupId, backgroundColor),
+    ...chartXLabels(spreadsheet, x, y, groupId, backgroundColor, pageId),
+    ...chartYLabels(spreadsheet, x, y, groupId, backgroundColor, pageId),
+    ...chartLines(spreadsheet, x, y, groupId, backgroundColor, pageId),
   ];
 };
 
@@ -357,6 +369,7 @@ const chartTypeBar = (
   spreadsheet: Spreadsheet,
   x: number,
   y: number,
+  pageId: string | null,
 ): ChartElements => {
   const max = Math.max(...spreadsheet.values);
   const groupId = randomId();
@@ -365,6 +378,7 @@ const chartTypeBar = (
   const bars = spreadsheet.values.map((value, index) => {
     const barHeight = (value / max) * BAR_HEIGHT;
     return newElement({
+      pageId,
       backgroundColor,
       groupIds: [groupId],
       ...commonProps,
@@ -384,6 +398,7 @@ const chartTypeBar = (
       y,
       groupId,
       backgroundColor,
+      pageId,
       process.env.NODE_ENV === ENV.DEVELOPMENT,
     ),
   ];
@@ -393,6 +408,7 @@ const chartTypeLine = (
   spreadsheet: Spreadsheet,
   x: number,
   y: number,
+  pageId: string | null,
 ): ChartElements => {
   const max = Math.max(...spreadsheet.values);
   const groupId = randomId();
@@ -413,6 +429,7 @@ const chartTypeLine = (
   const minY = Math.min(...points.map((element) => element[1]));
 
   const line = newLinearElement({
+    pageId,
     backgroundColor,
     groupIds: [groupId],
     ...commonProps,
@@ -431,6 +448,7 @@ const chartTypeLine = (
     const cx = index * (BAR_WIDTH + BAR_GAP) + BAR_GAP / 2;
     const cy = -(value / max) * BAR_HEIGHT + BAR_GAP / 2;
     return newElement({
+      pageId,
       backgroundColor,
       groupIds: [groupId],
       ...commonProps,
@@ -448,6 +466,7 @@ const chartTypeLine = (
     const cx = index * (BAR_WIDTH + BAR_GAP) + BAR_GAP / 2;
     const cy = (value / max) * BAR_HEIGHT + BAR_GAP / 2 + BAR_GAP;
     return newLinearElement({
+      pageId,
       backgroundColor,
       groupIds: [groupId],
       ...commonProps,
@@ -473,6 +492,7 @@ const chartTypeLine = (
       y,
       groupId,
       backgroundColor,
+      pageId,
       process.env.NODE_ENV === ENV.DEVELOPMENT,
     ),
     line,
@@ -486,9 +506,10 @@ export const renderSpreadsheet = (
   spreadsheet: Spreadsheet,
   x: number,
   y: number,
+  pageId: string | null,
 ): ChartElements => {
   if (chartType === "line") {
-    return chartTypeLine(spreadsheet, x, y);
+    return chartTypeLine(spreadsheet, x, y, pageId);
   }
-  return chartTypeBar(spreadsheet, x, y);
+  return chartTypeBar(spreadsheet, x, y, pageId);
 };

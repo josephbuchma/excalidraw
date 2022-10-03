@@ -85,6 +85,7 @@ const restoreElementWithProperties = <
 ): T => {
   const base: Pick<T, keyof ExcalidrawElement> = {
     type: extra.type || element.type,
+    pageId: element.pageId,
     // all elements must have version > 0 so getSceneVersion() will pick up
     // newly added elements
     version: element.version || 1,
@@ -307,9 +308,14 @@ export const restore = (
   localAppState: Partial<AppState> | null | undefined,
   localElements: readonly ExcalidrawElement[] | null | undefined,
 ): RestoredDataState => {
+  const elems = restoreElements(data?.elements, localElements);
+  const appState = restoreAppState(data?.appState, localAppState || null);
+  if (appState.documentMode === "multi-page") {
+    appState.currentPageId = elems[0]?.pageId || randomId();
+  }
   return {
-    elements: restoreElements(data?.elements, localElements),
-    appState: restoreAppState(data?.appState, localAppState || null),
+    elements: elems,
+    appState,
     files: data?.files || {},
   };
 };
