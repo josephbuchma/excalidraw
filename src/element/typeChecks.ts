@@ -61,7 +61,7 @@ export const isLinearElement = (
 };
 
 export const isLinearElementType = (
-  elementType: AppState["activeTool"]["type"],
+  elementType: AppState["activeTool"]["type"] | "page",
 ): boolean => {
   return (
     elementType === "arrow" || elementType === "line" // || elementType === "freedraw"
@@ -80,7 +80,7 @@ export const isBindingElement = (
 };
 
 export const isBindingElementType = (
-  elementType: AppState["activeTool"]["type"],
+  elementType: AppState["activeTool"]["type"] | "page",
 ): boolean => {
   return elementType === "arrow";
 };

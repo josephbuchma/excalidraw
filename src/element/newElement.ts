@@ -12,6 +12,7 @@ import {
   ExcalidrawFreeDrawElement,
   FontFamilyValues,
   ExcalidrawRectangleElement,
+  ExcalidrawPageElement,
 } from "../element/types";
 import { getFontString, getUpdatedTimestamp, isTestEnv } from "../utils";
 import { randomInteger, randomId } from "../random";
@@ -341,6 +342,27 @@ export const newImageElement = (
     status: opts.status ?? "pending",
     fileId: opts.fileId ?? null,
     scale: opts.scale ?? [1, 1],
+  };
+};
+
+export const newPageElement = (): ExcalidrawPageElement => {
+  const base = _newElementBase<ExcalidrawPageElement>("page", {
+    backgroundColor: "transparent",
+    fillStyle: "solid",
+    locked: true,
+    opacity: 0,
+    roughness: 0,
+    x: 0,
+    y: 0,
+    pageId: null,
+    strokeColor: "transparent",
+    strokeSharpness: "sharp",
+    strokeStyle: "solid",
+    strokeWidth: 0,
+  });
+  return {
+    ...base,
+    pageId: base.id,
   };
 };
 

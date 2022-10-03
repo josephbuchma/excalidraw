@@ -188,6 +188,7 @@ const hitTestPointAgainstElement = (args: HitTestArgs): boolean => {
     case "line":
       return hitTestLinear(args);
     case "selection":
+    case "page":
       console.warn(
         "This should not happen, we need to investigate why it does.",
       );
