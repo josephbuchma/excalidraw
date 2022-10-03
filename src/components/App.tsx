@@ -738,13 +738,14 @@ class App extends React.Component<AppProps, AppState> {
   private resetScene = withBatchedUpdates(
     (opts?: { resetLoadingState: boolean }) => {
       this.scene.replaceAllElements([]);
+      const firstPage = newPageElement();
       this.setState((state) => ({
         ...getDefaultAppState(),
         canvasSize: this.props.defaultCanvasSize
           ? { mode: "fixed", ...this.props.defaultCanvasSize }
           : { mode: "infinite" },
         documentMode: this.props.multiPageMode ? "multi-page" : "single-page",
-        currentPageId: this.props.multiPageMode ? randomId() : null,
+        currentPageId: this.props.multiPageMode ? firstPage.id : null,
         isLoading: opts?.resetLoadingState ? false : state.isLoading,
         theme: this.state.theme,
         zoom: this.state.zoom,
@@ -803,7 +804,7 @@ class App extends React.Component<AppProps, AppState> {
     scene.appState = {
       ...scene.appState,
       documentMode:
-        scene.appState.documentMode !== "default"
+        scene.appState.documentMode && scene.appState.documentMode !== "default"
           ? scene.appState.documentMode
           : this.props.multiPageMode
           ? "multi-page"
@@ -822,6 +823,13 @@ class App extends React.Component<AppProps, AppState> {
       isLoading: false,
       toast: this.state.toast,
     };
+
+    if (scene.appState.documentMode === "multi-page") {
+      if (scene.elements[0]?.type !== "page") {
+        scene.elements = [newPageElement(), ...scene.elements];
+      }
+      scene.appState.currentPageId = scene.elements[0].id;
+    }
 
     if (initialData?.scrollToContent) {
       scene.appState = {
