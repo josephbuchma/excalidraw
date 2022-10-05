@@ -7,6 +7,9 @@ import { AppState } from "../types";
 export const isInvisiblySmallElement = (
   element: ExcalidrawElement,
 ): boolean => {
+  if (element.type === "page") {
+    return false;
+  }
   if (isLinearElement(element) || isFreeDrawElement(element)) {
     return element.points.length < 2;
   }

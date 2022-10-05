@@ -182,3 +182,18 @@ export type ExcalidrawFreeDrawElement = _ExcalidrawElementBase &
   }>;
 
 export type FileId = string & { _brand: "FileId" };
+
+export type ExcalidrawDocumentElements = readonly ExcalidrawElement[];
+
+export type NonDeletedExcalidrawDocumentElements =
+  readonly NonDeletedExcalidrawElement[];
+
+export type ExcalidrawPageElements = readonly Exclude<
+  ExcalidrawElement,
+  ExcalidrawPageElement
+>[];
+
+export type NonDeletedExcalidrawPageElements = readonly Exclude<
+  NonDeletedExcalidrawElement,
+  ExcalidrawPageElement
+>[];

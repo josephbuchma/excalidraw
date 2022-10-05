@@ -11,6 +11,7 @@ import { ExcalidrawElement } from "../element/types";
 import { AppClassProperties, AppState } from "../types";
 import { MODES } from "../constants";
 import { trackEvent } from "../analytics";
+import { isPageAction } from "./register";
 
 const trackAction = (
   action: Action,
@@ -43,7 +44,10 @@ const trackAction = (
 export class ActionManager {
   actions = {} as Record<ActionName, Action>;
 
-  updater: (actionResult: ActionResult | Promise<ActionResult>) => void;
+  updater: (
+    action: Action,
+    actionResult: ActionResult | Promise<ActionResult>,
+  ) => void;
 
   getAppState: () => Readonly<AppState>;
   getElementsIncludingDeleted: () => readonly ExcalidrawElement[];
@@ -55,13 +59,17 @@ export class ActionManager {
     getElementsIncludingDeleted: () => readonly ExcalidrawElement[],
     app: AppClassProperties,
   ) {
-    this.updater = (actionResult) => {
+    this.updater = (action, actionResult) => {
       if (actionResult && "then" in actionResult) {
         actionResult.then((actionResult) => {
-          return updater(actionResult);
+          updater({ ...actionResult, action } as ActionResult & {
+            action: Action;
+          });
         });
       } else {
-        return updater(actionResult);
+        updater({ ...actionResult, action } as ActionResult & {
+          action: Action;
+        });
       }
     };
     this.getAppState = getAppState;
@@ -77,6 +85,16 @@ export class ActionManager {
     actions.forEach((action) => this.registerAction(action));
   }
 
+  private getElementsForAction(action: Action): readonly ExcalidrawElement[] {
+    if (isPageAction(action.name)) {
+      const { currentPageId } = this.getAppState();
+      return this.getElementsIncludingDeleted().filter(
+        (el) => el.pageId === currentPageId,
+      );
+    }
+    return this.getElementsIncludingDeleted();
+  }
+
   handleKeyDown(event: React.KeyboardEvent | KeyboardEvent) {
     const canvasActions = this.app.props.UIOptions.canvasActions;
     const data = Object.values(this.actions)
@@ -90,7 +108,7 @@ export class ActionManager {
           action.keyTest(
             event,
             this.getAppState(),
-            this.getElementsIncludingDeleted(),
+            this.getElementsForAction(action),
           ),
       );
 
@@ -110,7 +128,7 @@ export class ActionManager {
       }
     }
 
-    const elements = this.getElementsIncludingDeleted();
+    const elements = this.getElementsForAction(action);
     const appState = this.getAppState();
     const value = null;
 
@@ -118,18 +136,18 @@ export class ActionManager {
 
     event.preventDefault();
     event.stopPropagation();
-    this.updater(data[0].perform(elements, appState, value, this.app));
+    this.updater(action, action.perform(elements, appState, value, this.app));
     return true;
   }
 
   executeAction(action: Action, source: ActionSource = "api") {
-    const elements = this.getElementsIncludingDeleted();
+    const elements = this.getElementsForAction(action);
     const appState = this.getAppState();
     const value = null;
 
     trackAction(action, source, appState, elements, this.app, value);
 
-    this.updater(action.perform(elements, appState, value, this.app));
+    this.updater(action, action.perform(elements, appState, value, this.app));
   }
 
   /**
@@ -153,6 +171,7 @@ export class ActionManager {
         trackAction(action, "ui", appState, elements, this.app, formState);
 
         this.updater(
+          action,
           action.perform(
             this.getElementsIncludingDeleted(),
             this.getAppState(),

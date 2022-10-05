@@ -1,10 +1,13 @@
 import {
   ExcalidrawElement,
-  NonDeletedExcalidrawElement,
   NonDeleted,
+  ExcalidrawPageElements,
+  ExcalidrawDocumentElements,
+  NonDeletedExcalidrawDocumentElements,
 } from "../element/types";
 import { getNonDeletedElements, isNonDeletedElement } from "../element";
 import { LinearElementEditor } from "../element/linearElementEditor";
+import { last } from "lodash";
 
 type ElementIdKey = InstanceType<typeof LinearElementEditor>["elementId"];
 type ElementKey = ExcalidrawElement | ElementIdKey;
@@ -51,18 +54,32 @@ class Scene {
   // instance methods/props
   // ---------------------------------------------------------------------------
 
+  private currentPageId: () => string | null = () => null;
   private callbacks: Set<SceneStateCallback> = new Set();
 
-  private nonDeletedElements: readonly NonDeletedExcalidrawElement[] = [];
-  private elements: readonly ExcalidrawElement[] = [];
+  private nonDeletedElements: NonDeletedExcalidrawDocumentElements = [];
+  private elements: ExcalidrawDocumentElements = [];
   private elementsMap = new Map<ExcalidrawElement["id"], ExcalidrawElement>();
+  private pages: readonly string[] = [];
 
-  getElementsIncludingDeleted() {
+  getElementsIncludingDeleted(): ExcalidrawPageElements {
+    return this.elements.filter(
+      (el) => el.pageId === this.currentPageId(),
+    ) as ExcalidrawPageElements;
+  }
+
+  getDocumentElementsIncludingDeleted(): ExcalidrawDocumentElements {
     return this.elements;
   }
 
-  getNonDeletedElements(): readonly NonDeletedExcalidrawElement[] {
-    return this.nonDeletedElements;
+  getNonDeletedElements(): NonDeletedExcalidrawDocumentElements {
+    return this.nonDeletedElements.filter(
+      (el) => el.pageId === this.currentPageId(),
+    ) as NonDeletedExcalidrawDocumentElements;
+  }
+
+  getNonDeletedDocumentElements(): NonDeletedExcalidrawDocumentElements {
+    return this.nonDeletedElements as NonDeletedExcalidrawDocumentElements;
   }
 
   getElement<T extends ExcalidrawElement>(id: T["id"]): T | null {
@@ -79,10 +96,44 @@ class Scene {
     return null;
   }
 
-  replaceAllElements(nextElements: readonly ExcalidrawElement[]) {
-    this.elements = nextElements;
+  replaceAllDocumentElements(nextElements: ExcalidrawDocumentElements) {
+    this._replaceAllElements(nextElements, { allPages: true });
+  }
+
+  replaceAllElements(nextElements: ExcalidrawPageElements) {
+    this._replaceAllElements(nextElements, { allPages: false });
+  }
+
+  private _replaceAllElements(
+    nextElements: ExcalidrawDocumentElements,
+    opts = { allPages: false },
+  ) {
+    const pageId = this.currentPageId();
+    if (!pageId || opts.allPages) {
+      this.elements = nextElements;
+    } else {
+      const curPageIdx = this.elements.findIndex((el) => el.pageId === pageId);
+      if (curPageIdx < 0) {
+        console.log("attempt to replace elements of non-existing page");
+      }
+      const nextPageIdx = this.elements
+        .slice(curPageIdx)
+        .findIndex((el) => el.pageId !== pageId);
+      this.elements = [
+        ...this.elements.slice(0, curPageIdx),
+        ...nextElements,
+        ...(nextPageIdx > 0 ? this.elements.slice(nextPageIdx) : []),
+      ];
+    }
+    this.pages = this.elements.reduce((acc, el) => {
+      return el.type === "page" &&
+        !el.isDeleted &&
+        acc[acc.length - 1] !== el.id
+        ? [...acc, el.id]
+        : acc;
+    }, [] as readonly string[]);
     this.elementsMap.clear();
-    nextElements.forEach((element) => {
+    this.elements.forEach((element) => {
       this.elementsMap.set(element.id, element);
       Scene.mapElementToScene(element, this);
     });
@@ -95,6 +146,31 @@ class Scene {
       callback();
     }
   }
+
+  setCurrentPageIdGetter(getCurrentPageId: () => string | null) {
+    this.currentPageId = getCurrentPageId;
+  }
+
+  getNextPageId(): string | null {
+    if (last(this.pages) === this.currentPageId()) {
+      return this.currentPageId();
+    }
+    return (
+      this.pages[this.pages.indexOf(this.currentPageId()!) + 1] ||
+      this.currentPageId()
+    );
+  }
+
+  getPrevPageId(): string | null {
+    if (this.currentPageId() === this.elements[0]?.pageId) {
+      return this.currentPageId();
+    }
+    return (
+      this.pages[this.pages.indexOf(this.currentPageId()!) - 1] ||
+      this.currentPageId()
+    );
+  }
+
 
   addCallback(cb: SceneStateCallback): SceneStateCallbackRemover {
     if (this.callbacks.has(cb)) {

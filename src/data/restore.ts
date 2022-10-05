@@ -132,6 +132,8 @@ const restoreElement = (
   element: Exclude<ExcalidrawElement, ExcalidrawSelectionElement>,
 ): typeof element | null => {
   switch (element.type) {
+    case "page":
+      return element;
     case "text":
       let fontSize = element.fontSize;
       let fontFamily = element.fontFamily;
@@ -212,8 +214,6 @@ const restoreElement = (
     case "rectangle":
       return restoreElementWithProperties(element, {});
     case "diamond":
-      return restoreElementWithProperties(element, {});
-    case "page":
       return restoreElementWithProperties(element, {});
 
     // Don't use default case so as to catch a missing an element type case.

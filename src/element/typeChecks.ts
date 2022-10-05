@@ -10,6 +10,8 @@ import {
   ExcalidrawImageElement,
   ExcalidrawTextElementWithContainer,
   ExcalidrawTextContainer,
+  ExcalidrawDocumentElements,
+  ExcalidrawPageElements,
 } from "./types";
 
 export const isGenericElement = (
@@ -141,4 +143,17 @@ export const isBoundToContainer = (
   return (
     element !== null && isTextElement(element) && element.containerId !== null
   );
+};
+
+export const isPageElements = (
+  elements: readonly ExcalidrawElement[],
+): elements is ExcalidrawPageElements => {
+  const page = elements[0];
+  return page?.type === "page" && !elements.find((el) => el.pageId !== page.id);
+};
+
+export const isDocumentElements = (
+  elements: readonly ExcalidrawElement[],
+): elements is ExcalidrawDocumentElements => {
+  return true;
 };

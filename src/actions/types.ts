@@ -31,7 +31,7 @@ type ActionFn = (
   app: AppClassProperties,
 ) => ActionResult | Promise<ActionResult>;
 
-export type UpdaterFn = (res: ActionResult) => void;
+export type UpdaterFn = (res: ActionResult & { action: Action }) => void;
 export type ActionFilterFn = (action: Action) => void;
 
 export type ActionName =
@@ -124,6 +124,7 @@ export type PanelComponentProps = {
 
 export interface Action {
   name: ActionName;
+  isCrossPageAction?: boolean;
   PanelComponent?: React.FC<PanelComponentProps>;
   perform: ActionFn;
   keyPriority?: number;
