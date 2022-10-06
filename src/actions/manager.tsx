@@ -12,6 +12,7 @@ import { AppClassProperties, AppState } from "../types";
 import { MODES } from "../constants";
 import { trackEvent } from "../analytics";
 import { isPageAction } from "./register";
+import { getElementsOnPage } from "../element";
 
 const trackAction = (
   action: Action,
@@ -88,8 +89,9 @@ export class ActionManager {
   private getElementsForAction(action: Action): readonly ExcalidrawElement[] {
     if (isPageAction(action.name)) {
       const { currentPageId } = this.getAppState();
-      return this.getElementsIncludingDeleted().filter(
-        (el) => el.pageId === currentPageId,
+      return getElementsOnPage(
+        currentPageId,
+        this.getElementsIncludingDeleted(),
       );
     }
     return this.getElementsIncludingDeleted();
@@ -165,7 +167,7 @@ export class ActionManager {
       const action = this.actions[name];
       const PanelComponent = action.PanelComponent!;
       PanelComponent.displayName = "PanelComponent";
-      const elements = this.getElementsIncludingDeleted();
+      const elements = this.getElementsForAction(action);
       const appState = this.getAppState();
       const updateData = (formState?: any) => {
         trackAction(action, "ui", appState, elements, this.app, formState);
@@ -173,7 +175,7 @@ export class ActionManager {
         this.updater(
           action,
           action.perform(
-            this.getElementsIncludingDeleted(),
+            this.getElementsForAction(action),
             this.getAppState(),
             formState,
             this.app,
@@ -183,7 +185,7 @@ export class ActionManager {
 
       return (
         <PanelComponent
-          elements={this.getElementsIncludingDeleted()}
+          elements={this.getElementsForAction(action)}
           appState={this.getAppState()}
           updateData={updateData}
           appProps={this.app.props}

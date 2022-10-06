@@ -273,7 +273,6 @@ import {
 } from "../element/Hyperlink";
 import { shouldShowBoundingBox } from "../element/transformHandles";
 import { measureFontSizeFromWH } from "../element/resizeElements";
-import { randomId } from "../random";
 
 const deviceContextInitialValue = {
   isSmScreen: false,
@@ -558,6 +557,22 @@ class App extends React.Component<AppProps, AppState> {
                   <p style={{ fontFamily: "monospace" }}>
                     Current page: {this.state.currentPageId}
                   </p>
+                  <p>
+                    Elements:{" "}
+                    {
+                      this.scene
+                        .getNonDeletedDocumentElements()
+                        .filter((el) => el.type !== "page").length
+                    }
+                  </p>
+                  <p>
+                    Pages:{" "}
+                    {
+                      this.scene
+                        .getNonDeletedDocumentElements()
+                        .filter((el) => el.type === "page").length
+                    }
+                  </p>
                   <button onClick={() => this.gotoPrevPage()}>Prev Page</button>
                   <button onClick={() => this.gotoNextPage()}>Next Page</button>
                   <button onClick={() => this.addPage()}>Add Page</button>
@@ -648,6 +663,7 @@ class App extends React.Component<AppProps, AppState> {
   };
 
   public addPage = () => {
+    this.history.resumeRecording();
     const newPage = newPageElement();
     this.scene.replaceAllDocumentElements([
       ...this.scene.getDocumentElementsIncludingDeleted(),

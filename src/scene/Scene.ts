@@ -5,9 +5,15 @@ import {
   ExcalidrawDocumentElements,
   NonDeletedExcalidrawDocumentElements,
 } from "../element/types";
-import { getNonDeletedElements, isNonDeletedElement } from "../element";
+import {
+  getNonDeletedElements,
+  getElementsOnPage,
+  isNonDeletedElement,
+  replaceElementsOnPage,
+} from "../element";
 import { LinearElementEditor } from "../element/linearElementEditor";
 import { last } from "lodash";
+import _ from "lodash";
 
 type ElementIdKey = InstanceType<typeof LinearElementEditor>["elementId"];
 type ElementKey = ExcalidrawElement | ElementIdKey;
@@ -63,9 +69,7 @@ class Scene {
   private pages: readonly string[] = [];
 
   getElementsIncludingDeleted(): ExcalidrawPageElements {
-    return this.elements.filter(
-      (el) => el.pageId === this.currentPageId(),
-    ) as ExcalidrawPageElements;
+    return getElementsOnPage(this.currentPageId(), this.elements);
   }
 
   getDocumentElementsIncludingDeleted(): ExcalidrawDocumentElements {
@@ -73,9 +77,7 @@ class Scene {
   }
 
   getNonDeletedElements(): NonDeletedExcalidrawDocumentElements {
-    return this.nonDeletedElements.filter(
-      (el) => el.pageId === this.currentPageId(),
-    ) as NonDeletedExcalidrawDocumentElements;
+    return getElementsOnPage(this.currentPageId(), this.nonDeletedElements);
   }
 
   getNonDeletedDocumentElements(): NonDeletedExcalidrawDocumentElements {
@@ -109,22 +111,19 @@ class Scene {
     opts = { allPages: false },
   ) {
     const pageId = this.currentPageId();
+
     if (!pageId || opts.allPages) {
+      console.log("Replacing all elements");
       this.elements = nextElements;
     } else {
-      const curPageIdx = this.elements.findIndex((el) => el.pageId === pageId);
-      if (curPageIdx < 0) {
-        console.log("attempt to replace elements of non-existing page");
-      }
-      const nextPageIdx = this.elements
-        .slice(curPageIdx)
-        .findIndex((el) => el.pageId !== pageId);
-      this.elements = [
-        ...this.elements.slice(0, curPageIdx),
-        ...nextElements,
-        ...(nextPageIdx > 0 ? this.elements.slice(nextPageIdx) : []),
-      ];
+      console.log("Replacing elements on page", pageId, nextElements);
+      this.elements = replaceElementsOnPage(
+        pageId,
+        nextElements as ExcalidrawPageElements,
+        this.elements,
+      );
     }
+
     this.pages = this.elements.reduce((acc, el) => {
       return el.type === "page" &&
         !el.isDeleted &&
@@ -139,6 +138,13 @@ class Scene {
     });
     this.nonDeletedElements = getNonDeletedElements(this.elements);
     this.informMutation();
+    const ids = this.elements;
+    if (_.uniq(ids.map((el) => el.id)).length !== ids.length) {
+      console.warn(
+        "Scene.elements got some duplicated elements:",
+        this.elements,
+      );
+    }
   }
 
   informMutation() {
@@ -170,7 +176,6 @@ class Scene {
       this.currentPageId()
     );
   }
-
 
   addCallback(cb: SceneStateCallback): SceneStateCallbackRemover {
     if (this.callbacks.has(cb)) {

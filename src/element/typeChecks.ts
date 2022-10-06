@@ -148,8 +148,7 @@ export const isBoundToContainer = (
 export const isPageElements = (
   elements: readonly ExcalidrawElement[],
 ): elements is ExcalidrawPageElements => {
-  const page = elements[0];
-  return page?.type === "page" && !elements.find((el) => el.pageId !== page.id);
+  return !elements.find((el) => el.type === "page");
 };
 
 export const isDocumentElements = (
