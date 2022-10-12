@@ -2,9 +2,12 @@ import {
   ExcalidrawElement,
   NonDeletedExcalidrawElement,
   NonDeleted,
+  ExcalidrawPageElements,
+  ExcalidrawPageElement,
 } from "./types";
 import { isInvisiblySmallElement } from "./sizeHelpers";
 import { isLinearElementType } from "./typeChecks";
+import { newElementWith } from "./mutateElement";
 
 export {
   newElement,
@@ -72,6 +75,149 @@ export const getNonDeletedElements = (elements: readonly ExcalidrawElement[]) =>
   elements.filter(
     (element) => !element.isDeleted,
   ) as readonly NonDeletedExcalidrawElement[];
+
+export const getElementsOnPage = (
+  pageId: string | null,
+  elements: readonly ExcalidrawElement[],
+): ExcalidrawPageElements => {
+  let pageElIdx: number = -1;
+  for (let i = 0; i < elements.length; i++) {
+    const el = elements[i];
+    if (pageElIdx < 0 && el.type === "page" && el.id === pageId) {
+      pageElIdx = i;
+      continue;
+    }
+    if (pageElIdx > -1 && el.type === "page") {
+      return elements.slice(pageElIdx + 1, i) as ExcalidrawPageElements;
+    }
+  }
+  return elements.slice(pageElIdx + 1) as ExcalidrawPageElements;
+};
+
+export const replaceElementsOnPage = (
+  pageId: string | null,
+  newElements: ExcalidrawPageElements,
+  allElements: readonly ExcalidrawElement[],
+) => {
+  let start: number = -1;
+  const ret = [];
+  for (let i = 0; i < allElements.length; i++) {
+    const el = allElements[i];
+    if (start < 0) {
+      ret.push(el);
+    }
+    if (start < 0 && el.type === "page" && el.id === pageId) {
+      start = i;
+      ret.push(...newElements);
+      continue;
+    }
+    if (start > -1 && el.type === "page") {
+      ret.push(...allElements.slice(i));
+      return ret;
+    }
+  }
+  return ret;
+};
+
+export const addPage = (
+  page: ExcalidrawPageElement,
+  afterPageId: string,
+  allElements: readonly ExcalidrawElement[],
+): readonly ExcalidrawElement[] => {
+  let foundPrevPage = false;
+  const spliceIdx = allElements.findIndex((el) => {
+    foundPrevPage = el.id === afterPageId || foundPrevPage;
+    return (
+      foundPrevPage &&
+      el.id !== afterPageId &&
+      el.type === "page" &&
+      !el.isDeleted
+    );
+  });
+  if (spliceIdx > 0) {
+    const ret = allElements.slice();
+    ret.splice(spliceIdx, 0, page);
+    return ret;
+  }
+  return [...allElements, page];
+};
+
+export const deletePage = (
+  pageId: string,
+  allElements: readonly ExcalidrawElement[],
+  onlyClearElementsOnPage?: boolean,
+): readonly ExcalidrawElement[] => {
+  let isOnThePage = false;
+  return allElements.map((el, idx) => {
+    if (isOnThePage && el.type === "page") {
+      isOnThePage = false;
+    } else if (el.id === pageId) {
+      isOnThePage = true;
+      if (onlyClearElementsOnPage) {
+        return el;
+      }
+    }
+    if (isOnThePage) {
+      return newElementWith(el, { isDeleted: true });
+    }
+    return el;
+  });
+};
+
+export const findSubstituteForDeletedPage = (
+  deletedPageId: string,
+  elements: readonly ExcalidrawElement[],
+): string | null => {
+  let ret = null;
+  for (let i = 0; i < elements.length; i++) {
+    if (elements[i].id === deletedPageId) {
+      if (ret) {
+        return ret;
+      }
+      return (
+        elements.slice(i).find((el) => el.type === "page" && !el.isDeleted)
+          ?.id || null
+      );
+    }
+    if (elements[i].type === "page" && !elements[i].isDeleted) {
+      ret = elements[i].id;
+    }
+  }
+  return ret;
+};
+
+export const hasPageBefore = (
+  pageId: string,
+  elements: readonly ExcalidrawElement[],
+): boolean => {
+  return (
+    elements.find((el) => el.type === "page" && !el.isDeleted)?.id !== pageId
+  );
+};
+
+export const hasPageAfter = (
+  pageId: string,
+  elements: readonly ExcalidrawElement[],
+): boolean => {
+  return (
+    elements
+      .slice()
+      .reverse()
+      .find((el) => el.type === "page" && !el.isDeleted)?.id !== pageId
+  );
+};
+
+export const hasSingleEmptyPage = (elements: readonly ExcalidrawElement[]) => {
+  const { pages, elems } = elements.reduce(
+    (acc, el) => {
+      el.type === "page" && !el.isDeleted && acc.pages++;
+      el.type !== "page" && !el.isDeleted && acc.elems++;
+      return acc;
+    },
+    { pages: 0, elems: 0 },
+  );
+  return pages === 1 && elems === 0;
+};
 
 export const isNonDeletedElement = <T extends ExcalidrawElement>(
   element: T,

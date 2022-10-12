@@ -10,6 +10,8 @@ import {
   ExcalidrawImageElement,
   ExcalidrawTextElementWithContainer,
   ExcalidrawTextContainer,
+  ExcalidrawDocumentElements,
+  ExcalidrawPageElements,
 } from "./types";
 
 export const isGenericElement = (
@@ -61,7 +63,7 @@ export const isLinearElement = (
 };
 
 export const isLinearElementType = (
-  elementType: AppState["activeTool"]["type"],
+  elementType: AppState["activeTool"]["type"] | "page",
 ): boolean => {
   return (
     elementType === "arrow" || elementType === "line" // || elementType === "freedraw"
@@ -80,7 +82,7 @@ export const isBindingElement = (
 };
 
 export const isBindingElementType = (
-  elementType: AppState["activeTool"]["type"],
+  elementType: AppState["activeTool"]["type"] | "page",
 ): boolean => {
   return elementType === "arrow";
 };
@@ -141,4 +143,16 @@ export const isBoundToContainer = (
   return (
     element !== null && isTextElement(element) && element.containerId !== null
   );
+};
+
+export const isPageElements = (
+  elements: readonly ExcalidrawElement[],
+): elements is ExcalidrawPageElements => {
+  return !elements.find((el) => el.type === "page");
+};
+
+export const isDocumentElements = (
+  elements: readonly ExcalidrawElement[],
+): elements is ExcalidrawDocumentElements => {
+  return true;
 };

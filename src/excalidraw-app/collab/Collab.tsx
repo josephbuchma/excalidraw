@@ -445,11 +445,15 @@ class Collab extends PureComponent<Props, CollabState> {
           return;
         }
 
-        const decryptedData = await this.decryptPayload(
+        const decryptedData = (await this.decryptPayload(
           iv,
           encryptedData,
           this.portal.roomKey,
-        );
+        )) as
+          | SocketUpdateDataSource[keyof SocketUpdateDataSource]
+          | {
+              type: "INVALID_RESPONSE";
+            };
 
         switch (decryptedData.type) {
           case "INVALID_RESPONSE":
@@ -476,7 +480,7 @@ class Collab extends PureComponent<Props, CollabState> {
             );
             break;
           case "MOUSE_LOCATION": {
-            const { pointer, button, username, selectedElementIds } =
+            const { pointer, button, username, selectedElementIds, pageId } =
               decryptedData.payload;
             const socketId: SocketUpdateDataSource["MOUSE_LOCATION"]["payload"]["socketId"] =
               decryptedData.payload.socketId ||
@@ -489,6 +493,7 @@ class Collab extends PureComponent<Props, CollabState> {
             user.button = button;
             user.selectedElementIds = selectedElementIds;
             user.username = username;
+            user.currentPageId = pageId;
             collaborators.set(socketId, user);
             this.excalidrawAPI.updateScene({
               collaborators,

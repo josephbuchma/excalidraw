@@ -35,11 +35,15 @@ import {
   actionLink,
   actionToggleLock,
   actionToggleLinearEditor,
+  actionNextPage,
+  actionPrevPage,
+  actionAddPage,
+  actionDeletePage,
 } from "../actions";
 import { createRedoAction, createUndoAction } from "../actions/actionHistory";
 import { ActionManager } from "../actions/manager";
-import { actions } from "../actions/register";
-import { ActionResult } from "../actions/types";
+import { actions, isPageAction } from "../actions/register";
+import { Action, ActionResult } from "../actions/types";
 import { trackEvent } from "../analytics";
 import { getDefaultAppState, isEraserActive } from "../appState";
 import {
@@ -105,6 +109,9 @@ import {
   textWysiwyg,
   transformElements,
   updateTextElement,
+  deletePage,
+  findSubstituteForDeletedPage,
+  addPage,
 } from "../element";
 import {
   bindOrUnbindLinearElement,
@@ -122,7 +129,11 @@ import {
 } from "../element/binding";
 import { LinearElementEditor } from "../element/linearElementEditor";
 import { mutateElement, newElementWith } from "../element/mutateElement";
-import { deepCopyElement, newFreeDrawElement } from "../element/newElement";
+import {
+  deepCopyElement,
+  newFreeDrawElement,
+  newPageElement,
+} from "../element/newElement";
 import {
   hasBoundTextElement,
   isBindingElement,
@@ -132,6 +143,7 @@ import {
   isInitializedImageElement,
   isLinearElement,
   isLinearElementType,
+  isPageElements,
   isTextBindableContainer,
 } from "../element/typeChecks";
 import {
@@ -147,6 +159,7 @@ import {
   FileId,
   NonDeletedExcalidrawElement,
   ExcalidrawTextContainer,
+  ExcalidrawPageElements,
 } from "../element/types";
 import { getCenter, getDistance } from "../gesture";
 import {
@@ -227,6 +240,7 @@ import {
 } from "../utils";
 import ContextMenu, { ContextMenuOption } from "./ContextMenu";
 import LayerUI from "./LayerUI";
+import { PageAwarenessMobile, PageAwarenessDesktop } from "./PageAwareness";
 import { Toast } from "./Toast";
 import { actionToggleViewMode } from "../actions/actionToggleViewMode";
 import {
@@ -434,11 +448,12 @@ class App extends React.Component<AppProps, AppState> {
     };
 
     this.scene = new Scene();
+    this.scene.setCurrentPageIdGetter(() => this.state.currentPageId);
     this.history = new History();
     this.actionManager = new ActionManager(
       this.syncActionResult,
       () => this.state,
-      () => this.scene.getElementsIncludingDeleted(),
+      () => this.scene.getDocumentElementsIncludingDeleted(),
       this,
     );
     this.actionManager.registerAll(actions);
@@ -537,6 +552,31 @@ class App extends React.Component<AppProps, AppState> {
               <ExcalidrawElementsContext.Provider
                 value={this.scene.getNonDeletedElements()}
               >
+                {this.state.currentPageId && this.device.isMobile && (
+                  <PageAwarenessMobile
+                    pages={this.scene.getPageIds()}
+                    currentPageId={this.state.currentPageId}
+                  />
+                )}
+                {this.state.currentPageId && !this.device.isMobile && (
+                  <PageAwarenessDesktop
+                    pages={this.scene.getPageIds()}
+                    currentPageId={this.state.currentPageId}
+                    onNextPage={() =>
+                      this.actionManager.executeAction(actionNextPage)
+                    }
+                    onPrevPage={() =>
+                      this.actionManager.executeAction(actionPrevPage)
+                    }
+                    onAddPage={() =>
+                      this.actionManager.executeAction(actionAddPage)
+                    }
+                    onDeletePage={() =>
+                      this.actionManager.executeAction(actionDeletePage)
+                    }
+                    isViewMode={this.state.viewModeEnabled}
+                  />
+                )}
                 <LayerUI
                   canvas={this.canvas}
                   appState={this.state}
@@ -605,15 +645,66 @@ class App extends React.Component<AppProps, AppState> {
   };
 
   public getSceneElementsIncludingDeleted = () => {
-    return this.scene.getElementsIncludingDeleted();
+    return this.scene.getDocumentElementsIncludingDeleted();
   };
 
   public getSceneElements = () => {
-    return this.scene.getNonDeletedElements();
+    return this.scene.getNonDeletedDocumentElements();
+  };
+
+  public gotoPrevPage = () => {
+    this.history.resumeRecording();
+    this.setState({ currentPageId: this.scene.getPrevPageId() });
+  };
+
+  public gotoNextPage = () => {
+    this.history.resumeRecording();
+    this.setState({ currentPageId: this.scene.getNextPageId() });
+  };
+
+  public addPage = () => {
+    const { currentPageId } = this.state;
+    if (!currentPageId) {
+      console.error("can't add page when currentPageId is null");
+      return;
+    }
+    this.history.resumeRecording();
+    const newPage = newPageElement();
+    const updatedElements = addPage(
+      newPage,
+      currentPageId,
+      this.scene.getDocumentElementsIncludingDeleted(),
+    );
+    this.scene.replaceAllDocumentElements(updatedElements);
+    this.setState({ currentPageId: newPage.id });
+  };
+
+  public deletePage = () => {
+    if (!this.state.currentPageId) {
+      console.error("This is not a multi-page document");
+      return;
+    }
+    this.history.resumeRecording();
+
+    const adjPageId =
+      this.scene.getPrevPageId() === this.state.currentPageId
+        ? this.scene.getNextPageId()
+        : this.scene.getPrevPageId();
+    this.scene.replaceAllDocumentElements(
+      deletePage(
+        this.state.currentPageId,
+        this.scene.getDocumentElementsIncludingDeleted(),
+        !adjPageId || adjPageId === this.state.currentPageId,
+      ),
+    );
+    this.setState({ currentPageId: adjPageId });
   };
 
   private syncActionResult = withBatchedUpdates(
-    (actionResult: ActionResult) => {
+    (
+      actionResult: ActionResult &
+        ({ action: Action } | { isCrossPageAction: boolean }),
+    ) => {
       // Since context menu closes when action triggered so setting to false
       this.contextMenuOpen = false;
       if (this.unmounted || actionResult === false) {
@@ -631,7 +722,18 @@ class App extends React.Component<AppProps, AppState> {
             editingElement = element;
           }
         });
-        this.scene.replaceAllElements(actionResult.elements);
+        if (
+          ("isCrossPageAction" in actionResult &&
+            actionResult.isCrossPageAction) ||
+          ("action" in actionResult && !isPageAction(actionResult.action.name))
+        ) {
+          this.scene.replaceAllDocumentElements(actionResult.elements);
+        } else {
+          this.scene.replaceAllElements(
+            actionResult.elements as ExcalidrawPageElements,
+          );
+        }
+
         if (actionResult.commitToHistory) {
           this.history.resumeRecording();
         }
@@ -736,12 +838,17 @@ class App extends React.Component<AppProps, AppState> {
    */
   private resetScene = withBatchedUpdates(
     (opts?: { resetLoadingState: boolean }) => {
-      this.scene.replaceAllElements([]);
+      const firstPage = newPageElement();
+      this.scene.replaceAllDocumentElements(
+        this.props.multiPageMode ? [firstPage] : [],
+      );
       this.setState((state) => ({
         ...getDefaultAppState(),
         canvasSize: this.props.defaultCanvasSize
           ? { mode: "fixed", ...this.props.defaultCanvasSize }
           : { mode: "infinite" },
+        documentMode: this.props.multiPageMode ? "multi-page" : "single-page",
+        currentPageId: this.props.multiPageMode ? firstPage.id : null,
         isLoading: opts?.resetLoadingState ? false : state.isLoading,
         theme: this.state.theme,
         zoom: this.state.zoom,
@@ -799,6 +906,12 @@ class App extends React.Component<AppProps, AppState> {
     const scene = restore(initialData, null, null);
     scene.appState = {
       ...scene.appState,
+      documentMode:
+        scene.appState.documentMode && scene.appState.documentMode !== "default"
+          ? scene.appState.documentMode
+          : this.props.multiPageMode
+          ? "multi-page"
+          : "single-page",
       theme: this.props.theme || scene.appState.theme,
       // we're falling back to current (pre-init) state when deciding
       // whether to open the library, to handle a case where we
@@ -813,6 +926,13 @@ class App extends React.Component<AppProps, AppState> {
       isLoading: false,
       toast: this.state.toast,
     };
+
+    if (scene.appState.documentMode === "multi-page") {
+      if (scene.elements[0]?.type !== "page") {
+        scene.elements = [newPageElement(), ...scene.elements];
+      }
+      scene.appState.currentPageId = scene.elements[0].id;
+    }
 
     if (initialData?.scrollToContent) {
       scene.appState = {
@@ -835,6 +955,7 @@ class App extends React.Component<AppProps, AppState> {
     this.syncActionResult({
       ...scene,
       commitToHistory: true,
+      isCrossPageAction: true,
     });
   };
 
@@ -1214,7 +1335,10 @@ class App extends React.Component<AppProps, AppState> {
       );
     }
     this.renderScene();
-    this.history.record(this.state, this.scene.getElementsIncludingDeleted());
+    this.history.record(
+      this.state,
+      this.scene.getDocumentElementsIncludingDeleted(),
+    );
 
     // Do not notify consumers if we're still loading the scene. Among other
     // potential issues, this fixes a case where the tab isn't focused during
@@ -1222,10 +1346,21 @@ class App extends React.Component<AppProps, AppState> {
     // override whatever is in localStorage currently.
     if (!this.state.isLoading) {
       this.props.onChange?.(
-        this.scene.getElementsIncludingDeleted(),
+        this.scene.getDocumentElementsIncludingDeleted(),
         this.state,
         this.files,
       );
+    }
+    if (
+      this.state.currentPageId &&
+      this.scene.getElement(this.state.currentPageId)?.isDeleted
+    ) {
+      this.setState({
+        currentPageId: findSubstituteForDeletedPage(
+          this.state.currentPageId,
+          this.scene.getDocumentElementsIncludingDeleted(),
+        ),
+      });
     }
   }
 
@@ -1248,7 +1383,11 @@ class App extends React.Component<AppProps, AppState> {
           remoteSelectedElementIds[id].push(socketId);
         }
       }
-      if (!user.pointer) {
+      if (
+        !user.pointer ||
+        (this.state.currentPageId &&
+          user.currentPageId !== this.state.currentPageId)
+      ) {
         return;
       }
       if (user.username) {
@@ -1582,6 +1721,10 @@ class App extends React.Component<AppProps, AppState> {
       this.files = { ...this.files, ...opts.files };
     }
 
+    if (!isPageElements(nextElements)) {
+      return;
+    }
+
     this.scene.replaceAllElements(nextElements);
     this.history.resumeRecording();
 
@@ -1776,7 +1919,7 @@ class App extends React.Component<AppProps, AppState> {
       }
 
       if (sceneData.elements) {
-        this.scene.replaceAllElements(sceneData.elements);
+        this.scene.replaceAllDocumentElements(sceneData.elements);
       }
 
       if (sceneData.collaborators) {
@@ -2750,34 +2893,36 @@ class App extends React.Component<AppProps, AppState> {
           return;
         }
 
-        this.scene.replaceAllElements(
-          this.scene.getNonDeletedElements().map((el) => {
-            if (el.id !== elem.id && pinch.boundTextElSnap?.id !== el.id) {
-              return el;
-            }
-            const elSnap =
-              el.id === pinch.elSnap.id ? pinch.elSnap : pinch.boundTextElSnap!;
-            const width = elSnap.width * scaleFactor;
-            const height = elSnap.height * scaleFactor;
-            const font =
-              el.type === "text" &&
-              !el.isDeleted &&
-              measureFontSizeFromWH(el, width, height);
-            return newElementWith(el, {
-              x:
-                el.x +
-                deltaX / this.state.zoom.value -
-                (width - el.width) * pinch.focalPoint.xFactor,
-              y:
-                el.y +
-                deltaY / this.state.zoom.value -
-                (height - el.height) * pinch.focalPoint.yFactor,
-              width,
-              height,
-              ...(font && { fontSize: font.size, baseline: font.baseline }),
-            });
-          }),
-        );
+        const updatedElements = this.scene.getNonDeletedElements().map((el) => {
+          if (el.id !== elem.id && pinch.boundTextElSnap?.id !== el.id) {
+            return el;
+          }
+          const elSnap =
+            el.id === pinch.elSnap.id ? pinch.elSnap : pinch.boundTextElSnap!;
+          const width = elSnap.width * scaleFactor;
+          const height = elSnap.height * scaleFactor;
+          const font =
+            el.type === "text" &&
+            !el.isDeleted &&
+            measureFontSizeFromWH(el, width, height);
+          return newElementWith(el, {
+            x:
+              el.x +
+              deltaX / this.state.zoom.value -
+              (width - el.width) * pinch.focalPoint.xFactor,
+            y:
+              el.y +
+              deltaY / this.state.zoom.value -
+              (height - el.height) * pinch.focalPoint.yFactor,
+            width,
+            height,
+            ...(font && { fontSize: font.size, baseline: font.baseline }),
+          });
+        });
+        if (!isPageElements(updatedElements)) {
+          return;
+        }
+        this.scene.replaceAllElements(updatedElements);
         updateBoundElements(elem);
         return;
       }
@@ -3112,7 +3257,6 @@ class App extends React.Component<AppProps, AppState> {
     };
 
     const idsToUpdate: Array<string> = [];
-
     const distance = distance2d(
       pointerDownState.lastCoords.x,
       pointerDownState.lastCoords.y,
@@ -5768,6 +5912,7 @@ class App extends React.Component<AppProps, AppState> {
               },
               replaceFiles: true,
               commitToHistory: true,
+              isCrossPageAction: true,
             });
             return;
           } catch (error: any) {
@@ -5843,6 +5988,7 @@ class App extends React.Component<AppProps, AppState> {
           },
           replaceFiles: true,
           commitToHistory: true,
+          isCrossPageAction: true,
         });
       } else if (ret.type === MIME_TYPES.excalidrawlib) {
         await this.library
@@ -6448,7 +6594,7 @@ if (
     elements: {
       configurable: true,
       get() {
-        return this.app?.scene.getElementsIncludingDeleted();
+        return this.app?.scene.elements;
       },
       set(elements: ExcalidrawElement[]) {
         return this.app?.scene.replaceAllElements(elements);

@@ -140,6 +140,8 @@ const restoreElement = (
   element: Exclude<ExcalidrawElement, ExcalidrawSelectionElement>,
 ): typeof element | null => {
   switch (element.type) {
+    case "page":
+      return element;
     case "text":
       let fontSize = element.fontSize;
       let fontFamily = element.fontFamily;
@@ -316,9 +318,15 @@ export const restore = (
   localAppState: Partial<AppState> | null | undefined,
   localElements: readonly ExcalidrawElement[] | null | undefined,
 ): RestoredDataState => {
+  const elems = restoreElements(data?.elements, localElements);
+  const appState = restoreAppState(data?.appState, localAppState || null);
+  const firstPage = elems.find((el) => el.type === "page" && !el.isDeleted);
+  if (appState.documentMode === "multi-page" && firstPage) {
+    appState.currentPageId = firstPage.id;
+  }
   return {
-    elements: restoreElements(data?.elements, localElements),
-    appState: restoreAppState(data?.appState, localAppState || null),
+    elements: elems,
+    appState,
     files: data?.files || {},
   };
 };

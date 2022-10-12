@@ -92,6 +92,8 @@ export const reconcileElements = (
 
     // parent may not be defined in case the remote client is running an older
     // excalidraw version
+    // excalidraw version,
+    // or if remoteElements came from firebase
     const parent =
       remoteElement[PRECEDING_ELEMENT_KEY] ||
       remoteElements[remoteElementIdx - 1]?.id ||

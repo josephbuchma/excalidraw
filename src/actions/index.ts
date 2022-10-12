@@ -86,3 +86,10 @@ export { actionUnbindText, actionBindText } from "./actionBoundText";
 export { actionLink } from "../element/Hyperlink";
 export { actionToggleLock } from "./actionToggleLock";
 export { actionToggleLinearEditor } from "./actionLinearEditor";
+
+export {
+  actionNextPage,
+  actionPrevPage,
+  actionAddPage,
+  actionDeletePage,
+} from "./actionPage";

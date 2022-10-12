@@ -40,6 +40,7 @@ const ExcalidrawBase = (props: ExcalidrawProps) => {
     onScrollChange,
     defaultCanvasSize,
     alternativeGestures,
+    multiPageMode,
   } = props;
 
   const canvasActions = props.UIOptions?.canvasActions;
@@ -114,6 +115,7 @@ const ExcalidrawBase = (props: ExcalidrawProps) => {
           onPointerDown={onPointerDown}
           onScrollChange={onScrollChange}
           defaultCanvasSize={defaultCanvasSize}
+          multiPageMode={multiPageMode}
           alternativeGestures={alternativeGestures}
         />
       </Provider>

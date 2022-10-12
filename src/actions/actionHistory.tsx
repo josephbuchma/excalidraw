@@ -62,6 +62,7 @@ type ActionCreator = (history: History) => Action;
 
 export const createUndoAction: ActionCreator = (history) => ({
   name: "undo",
+  isCrossPageAction: true,
   trackEvent: { category: "history" },
   perform: (elements, appState) =>
     writeData(elements, appState, () => history.undoOnce()),
@@ -83,6 +84,7 @@ export const createUndoAction: ActionCreator = (history) => ({
 
 export const createRedoAction: ActionCreator = (history) => ({
   name: "redo",
+  isCrossPageAction: true,
   trackEvent: { category: "history" },
   perform: (elements, appState) =>
     writeData(elements, appState, () => history.redoOnce()),

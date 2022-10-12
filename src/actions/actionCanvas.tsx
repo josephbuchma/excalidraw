@@ -18,6 +18,7 @@ import { newElementWith } from "../element/mutateElement";
 import { getDefaultAppState, isEraserActive } from "../appState";
 import ClearCanvas from "../components/ClearCanvas";
 import clsx from "clsx";
+import { newPageElement } from "../element/newElement";
 
 export const actionChangeViewBackgroundColor = register({
   name: "changeViewBackgroundColor",
@@ -60,14 +61,17 @@ export const actionChangeViewBackgroundColor = register({
 export const actionClearCanvas = register({
   name: "clearCanvas",
   trackEvent: { category: "canvas" },
+  isCrossPageAction: true,
   perform: (elements, appState, _, app) => {
     app.imageCache.clear();
+    const page = newPageElement();
     return {
-      elements: elements.map((element) =>
-        newElementWith(element, { isDeleted: true }),
-      ),
+      elements: elements
+        .map((element) => newElementWith(element, { isDeleted: true }))
+        .concat(app.props.multiPageMode ? [page] : []),
       appState: {
         ...getDefaultAppState(),
+        currentPageId: app.props.multiPageMode ? page.id : null,
         scrollX: appState.canvasSize.mode === "fixed" ? appState.scrollX : 0,
         scrollY: appState.canvasSize.mode === "fixed" ? appState.scrollY : 0,
         zoom: appState.zoom,

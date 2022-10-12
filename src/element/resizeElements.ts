@@ -190,7 +190,7 @@ const validateTwoPointElementNormalized = (
 };
 
 const getPerfectElementSizeWithRotation = (
-  elementType: ExcalidrawElement["type"],
+  elementType: Exclude<ExcalidrawElement["type"], "page">,
   width: number,
   height: number,
   angle: number,

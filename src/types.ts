@@ -38,6 +38,7 @@ export type Collaborator = {
     x: number;
     y: number;
   };
+  currentPageId?: string | null;
   button?: "up" | "down";
   selectedElementIds?: AppState["selectedElementIds"];
   username?: string | null;
@@ -75,6 +76,8 @@ export type CanvasSize =
   | { mode: "infinite" }
   | { mode: "default" };
 
+export type DocumentMode = "single-page" | "multi-page" | "default";
+
 export type BinaryFileMetadata = Omit<BinaryFileData, "dataURL">;
 
 export type BinaryFiles = Record<ExcalidrawElement["id"], BinaryFileData>;
@@ -91,6 +94,8 @@ export type LastActiveToolBeforeEraser =
   | null;
 export type AppState = {
   canvasSize: CanvasSize;
+  currentPageId: string | null;
+  documentMode: DocumentMode | null;
   isLoading: boolean;
   errorMessage: string | null;
   fixedCanvasFrameElement: NonDeletedExcalidrawElement | null;
@@ -333,6 +338,7 @@ export interface ExcalidrawProps {
   ) => void;
   onScrollChange?: (scrollX: number, scrollY: number) => void;
   defaultCanvasSize?: { width: number; height: number; autoZoom?: boolean };
+  multiPageMode?: boolean;
   alternativeGestures?: {
     pinchResize?: Array<ExcalidrawElement["type"]>;
     disableGroupSelect?: boolean;

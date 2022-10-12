@@ -202,15 +202,16 @@ class Portal {
     button: SocketUpdateDataSource["MOUSE_LOCATION"]["payload"]["button"];
   }) => {
     if (this.socket?.id) {
+      const appState = this.collab.excalidrawAPI.getAppState();
       const data: SocketUpdateDataSource["MOUSE_LOCATION"] = {
         type: "MOUSE_LOCATION",
         payload: {
           socketId: this.socket.id,
           pointer: payload.pointer,
           button: payload.button || "up",
-          selectedElementIds:
-            this.collab.excalidrawAPI.getAppState().selectedElementIds,
+          selectedElementIds: appState.selectedElementIds,
           username: this.collab.state.username,
+          pageId: appState.currentPageId,
         },
       };
       return this._broadcastSocketData(

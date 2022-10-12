@@ -192,6 +192,8 @@ const hitTestPointAgainstElement = (args: HitTestArgs): boolean => {
         "This should not happen, we need to investigate why it does.",
       );
       return false;
+    case "page":
+      return false;
   }
 };
 

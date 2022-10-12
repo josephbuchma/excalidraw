@@ -26,6 +26,7 @@ const clearAppStatePropertiesForHistory = (appState: AppState) => {
     editingLinearElement: appState.editingLinearElement,
     editingGroupId: appState.editingGroupId,
     name: appState.name,
+    currentPageId: appState.currentPageId,
   };
 };
 

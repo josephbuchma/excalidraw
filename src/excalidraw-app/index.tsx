@@ -761,6 +761,7 @@ const ExcalidrawWrapper = () => {
         autoFocus={true}
         theme={theme}
         defaultCanvasSize={{ width: 600, height: 800, autoZoom: true }}
+        multiPageMode={true}
         alternativeGestures={{
           pinchResize: ["rectangle", "diamond", "ellipse", "image", "text"],
           disableGroupSelect: false,

@@ -59,6 +59,10 @@ type _ExcalidrawElementBase = Readonly<{
   customData?: Record<string, any>;
 }>;
 
+export type ExcalidrawPageElement = _ExcalidrawElementBase & {
+  type: "page";
+};
+
 export type ExcalidrawSelectionElement = _ExcalidrawElementBase & {
   type: "selection";
 };
@@ -105,6 +109,7 @@ export type ExcalidrawGenericElement =
  * between peers and contain no state local to the peer.
  */
 export type ExcalidrawElement =
+  | ExcalidrawPageElement
   | ExcalidrawGenericElement
   | ExcalidrawTextElement
   | ExcalidrawLinearElement
@@ -176,3 +181,18 @@ export type ExcalidrawFreeDrawElement = _ExcalidrawElementBase &
   }>;
 
 export type FileId = string & { _brand: "FileId" };
+
+export type ExcalidrawDocumentElements = readonly ExcalidrawElement[];
+
+export type NonDeletedExcalidrawDocumentElements =
+  readonly NonDeletedExcalidrawElement[];
+
+export type ExcalidrawPageElements = readonly Exclude<
+  ExcalidrawElement,
+  ExcalidrawPageElement
+>[];
+
+export type NonDeletedExcalidrawPageElements = readonly Exclude<
+  NonDeletedExcalidrawElement,
+  ExcalidrawPageElement
+>[];
