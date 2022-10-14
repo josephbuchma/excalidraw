@@ -9,6 +9,12 @@ import {
   hasSingleEmptyPage,
 } from "../element";
 import { register } from "./register";
+import {
+  addPageIcon,
+  nextPageIcon,
+  prevPageIcon,
+  trash,
+} from "../components/icons";
 
 export const actionAddPage = register({
   name: "addPage",
@@ -39,7 +45,7 @@ export const actionAddPage = register({
     <ToolButton
       type="button"
       visible={appState.documentMode === "multi-page"}
-      icon={"+"}
+      icon={addPageIcon}
       aria-label={t("buttons.undo")}
       onClick={updateData}
       size={data?.size || "medium"}
@@ -82,7 +88,7 @@ export const actionDeletePage = register({
       visible={
         appState.documentMode === "multi-page" && !hasSingleEmptyPage(elements)
       }
-      icon={"x"}
+      icon={trash}
       aria-label={t("buttons.undo")}
       onClick={updateData}
       size={data?.size || "medium"}
@@ -112,7 +118,7 @@ export const actionPrevPage = register({
           appState.currentPageId &&
           hasPageBefore(appState.currentPageId, elements),
       )}
-      icon={"<"}
+      icon={prevPageIcon}
       aria-label={t("buttons.undo")}
       onClick={updateData}
       size={data?.size || "medium"}
@@ -143,7 +149,7 @@ export const actionNextPage = register({
         !!appState.currentPageId &&
         hasPageAfter(appState.currentPageId, elements)
       }
-      icon={">"}
+      icon={nextPageIcon}
       aria-label={t("buttons.redo")}
       onClick={updateData}
       size={data?.size || "medium"}
