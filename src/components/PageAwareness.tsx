@@ -2,6 +2,7 @@ import React from "react";
 import "./PageAwareness.scss";
 import clsx from "clsx";
 import { ToolButton } from "./ToolButton";
+import { addPageIcon, nextPageIcon, prevPageIcon, trash } from "./icons";
 
 export type PageAwarenessMobileProps = {
   pages: readonly string[];
@@ -10,9 +11,6 @@ export type PageAwarenessMobileProps = {
 
 export const PageAwarenessMobile = React.memo(
   ({ pages, currentPageId }: PageAwarenessMobileProps) => {
-    if (pages.length === 1) {
-      return null;
-    }
     let current = 0;
     return (
       <div
@@ -73,7 +71,7 @@ export const PageAwarenessDesktop = React.memo(
           <ToolButton
             type="button"
             size="small"
-            icon="⇦"
+            icon={prevPageIcon}
             aria-label="Previous page"
             onClick={onPrevPage}
           />
@@ -82,14 +80,14 @@ export const PageAwarenessDesktop = React.memo(
               <ToolButton
                 type="button"
                 size="small"
-                icon="×"
+                icon={trash}
                 aria-label="Delete current page"
                 onClick={onDeletePage}
               />
               <ToolButton
                 type="button"
                 size="small"
-                icon="+"
+                icon={addPageIcon}
                 aria-label="Add new page after this one"
                 onClick={onAddPage}
               />
@@ -98,7 +96,7 @@ export const PageAwarenessDesktop = React.memo(
           <ToolButton
             type="button"
             size="small"
-            icon="⇨"
+            icon={nextPageIcon}
             aria-label="Next page"
             onClick={onNextPage}
           />
