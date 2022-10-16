@@ -354,6 +354,7 @@ export const ColorPicker = ({
   setActive,
   elements,
   appState,
+  showInput,
 }: {
   type: "canvasBackground" | "elementBackground" | "elementStroke";
   color: string | null;
@@ -363,6 +364,7 @@ export const ColorPicker = ({
   setActive: (active: boolean) => void;
   elements: readonly ExcalidrawElement[];
   appState: AppState;
+  showInput?: boolean;
 }) => {
   const pickerButton = React.useRef<HTMLButtonElement>(null);
 
@@ -376,13 +378,15 @@ export const ColorPicker = ({
           onClick={() => setActive(!isActive)}
           ref={pickerButton}
         />
-        <ColorInput
-          color={color}
-          label={label}
-          onChange={(color) => {
-            onChange(color);
-          }}
-        />
+        {showInput && (
+          <ColorInput
+            color={color}
+            label={label}
+            onChange={(color) => {
+              onChange(color);
+            }}
+          />
+        )}
       </div>
       <React.Suspense fallback="">
         {isActive ? (
