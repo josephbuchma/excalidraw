@@ -344,6 +344,7 @@ export interface ExcalidrawProps {
     disableGroupSelect?: boolean;
     disableTransformUI?: { touch?: boolean; mouse?: boolean };
   };
+  alternativeMobileUI?: boolean;
 }
 
 export type SceneData = {

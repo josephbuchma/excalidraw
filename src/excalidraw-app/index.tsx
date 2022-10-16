@@ -767,6 +767,7 @@ const ExcalidrawWrapper = () => {
           disableGroupSelect: false,
           disableTransformUI: { touch: false, mouse: false },
         }}
+        alternativeMobileUI={true}
       />
       {excalidrawAPI && <Collab excalidrawAPI={excalidrawAPI} />}
       {errorMessage && (

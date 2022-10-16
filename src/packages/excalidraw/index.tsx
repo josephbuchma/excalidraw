@@ -41,6 +41,7 @@ const ExcalidrawBase = (props: ExcalidrawProps) => {
     defaultCanvasSize,
     alternativeGestures,
     multiPageMode,
+    alternativeMobileUI,
   } = props;
 
   const canvasActions = props.UIOptions?.canvasActions;
@@ -117,6 +118,7 @@ const ExcalidrawBase = (props: ExcalidrawProps) => {
           defaultCanvasSize={defaultCanvasSize}
           multiPageMode={multiPageMode}
           alternativeGestures={alternativeGestures}
+          alternativeMobileUI={alternativeMobileUI}
         />
       </Provider>
     </InitializeApp>

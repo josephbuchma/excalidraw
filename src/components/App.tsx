@@ -609,6 +609,7 @@ class App extends React.Component<AppProps, AppState> {
                   library={this.library}
                   id={this.id}
                   onImageAction={this.onImageAction}
+                  alternativeMobileUI={this.props.alternativeMobileUI}
                 />
                 <div className="excalidraw-textEditorContainer" />
                 <div className="excalidraw-contextMenuContainer" />
