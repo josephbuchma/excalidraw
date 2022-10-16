@@ -1,5 +1,5 @@
 import { AppState } from "../../src/types";
-import { ButtonIconSelect } from "../components/ButtonIconSelect";
+import { ButtonIconToggleSelect } from "../components/ButtonIconToggleSelect";
 import { ColorPicker } from "../components/ColorPicker";
 import { IconPicker } from "../components/IconPicker";
 import {
@@ -302,7 +302,7 @@ export const actionChangeFillStyle = register({
   PanelComponent: ({ elements, appState, updateData }) => (
     <fieldset>
       <legend>{t("labels.fill")}</legend>
-      <ButtonIconSelect
+      <ButtonIconToggleSelect
         options={[
           {
             value: "hachure",
@@ -352,23 +352,23 @@ export const actionChangeStrokeWidth = register({
   PanelComponent: ({ elements, appState, updateData }) => (
     <fieldset>
       <legend>{t("labels.strokeWidth")}</legend>
-      <ButtonIconSelect
+      <ButtonIconToggleSelect
         group="stroke-width"
         options={[
           {
             value: 1,
             text: t("labels.thin"),
-            icon: <StrokeWidthIcon theme={appState.theme} strokeWidth={2} />,
+            icon: <StrokeWidthIcon theme={appState.theme} strokeWidth={4} />,
           },
           {
             value: 2,
             text: t("labels.bold"),
-            icon: <StrokeWidthIcon theme={appState.theme} strokeWidth={6} />,
+            icon: <StrokeWidthIcon theme={appState.theme} strokeWidth={8} />,
           },
           {
             value: 4,
             text: t("labels.extraBold"),
-            icon: <StrokeWidthIcon theme={appState.theme} strokeWidth={10} />,
+            icon: <StrokeWidthIcon theme={appState.theme} strokeWidth={12} />,
           },
         ]}
         value={getFormValue(
@@ -401,7 +401,7 @@ export const actionChangeSloppiness = register({
   PanelComponent: ({ elements, appState, updateData }) => (
     <fieldset>
       <legend>{t("labels.sloppiness")}</legend>
-      <ButtonIconSelect
+      <ButtonIconToggleSelect
         group="sloppiness"
         options={[
           {
@@ -449,7 +449,7 @@ export const actionChangeStrokeStyle = register({
   PanelComponent: ({ elements, appState, updateData }) => (
     <fieldset>
       <legend>{t("labels.strokeStyle")}</legend>
-      <ButtonIconSelect
+      <ButtonIconToggleSelect
         group="strokeStyle"
         options={[
           {
@@ -529,7 +529,7 @@ export const actionChangeFontSize = register({
   PanelComponent: ({ elements, appState, updateData }) => (
     <fieldset>
       <legend>{t("labels.fontSize")}</legend>
-      <ButtonIconSelect
+      <ButtonIconToggleSelect
         group="font-size"
         options={[
           {
@@ -675,7 +675,7 @@ export const actionChangeFontFamily = register({
     return (
       <fieldset>
         <legend>{t("labels.fontFamily")}</legend>
-        <ButtonIconSelect<FontFamilyValues | false>
+        <ButtonIconToggleSelect<FontFamilyValues | false>
           group="font-family"
           options={options}
           value={getFormValue(
@@ -733,7 +733,7 @@ export const actionChangeTextAlign = register({
     return (
       <fieldset>
         <legend>{t("labels.textAlign")}</legend>
-        <ButtonIconSelect<TextAlign | false>
+        <ButtonIconToggleSelect<TextAlign | false>
           group="text-align"
           options={[
             {
@@ -805,7 +805,7 @@ export const actionChangeVerticalAlign = register({
   PanelComponent: ({ elements, appState, updateData }) => {
     return (
       <fieldset>
-        <ButtonIconSelect<VerticalAlign | false>
+        <ButtonIconToggleSelect<VerticalAlign | false>
           group="text-align"
           options={[
             {
@@ -876,7 +876,7 @@ export const actionChangeSharpness = register({
   PanelComponent: ({ elements, appState, updateData }) => (
     <fieldset>
       <legend>{t("labels.edges")}</legend>
-      <ButtonIconSelect
+      <ButtonIconToggleSelect
         group="edges"
         options={[
           {
