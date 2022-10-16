@@ -232,4 +232,18 @@
       right: 2px;
     }
   }
+
+  .ToolIcon.Shape.mobile {
+    --bg: var(--color-primary);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    height: 100%;
+
+    .ToolIcon__icon {
+      width: 100%;
+      height: 100%;
+    }
+  }
 }

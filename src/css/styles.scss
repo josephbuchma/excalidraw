@@ -178,6 +178,144 @@ html {
     }
   }
 
+  .selected-shape-actions-container {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .compact-panel-row {
+    pointer-events: none;
+    display: flex;
+    flex-direction: column;
+    flex-wrap: wrap;
+    justify-content: flex-start;
+    align-items: flex-start;
+    padding-top: var(--space-factor);
+    gap: var(--space-factor);
+    margin-bottom: calc(var(--space-factor) * 4);
+    margin-top: 60px;
+    &:empty {
+      display: none;
+    }
+
+    .props-group {
+      pointer-events: all;
+      display: flex;
+      flex-direction: column;
+      flex-wrap: nowrap;
+      gap: 0.4rem;
+      align-items: center;
+      max-width: 100%;
+      overflow: hidden;
+      padding: var(--space-factor) 0.5rem;
+      border-radius: var(--border-radius-md);
+      background: var(--overlay-bg-color);
+      box-shadow: var(--shadow-island);
+      &:empty {
+        display: none;
+      }
+    }
+
+    &.mobile {
+      margin-top: 0;
+      .props-group {
+        flex-direction: row;
+      }
+    }
+
+    h3,
+    legend,
+    .control-label {
+      display: none;
+    }
+
+    .control-label input {
+      display: block;
+      width: 100%;
+    }
+
+    h3:first-child,
+    legend:first-child,
+    .control-label:first-child {
+      margin-top: 0;
+    }
+
+    .buttonList.buttonListIcon label {
+      height: 30px;
+    }
+
+    .buttonList {
+      flex-wrap: wrap;
+
+      label {
+        font-size: 0.75rem;
+        display: inline-block;
+      }
+
+      input[type="radio"],
+      input[type="button"] {
+        opacity: 0;
+        position: absolute;
+        pointer-events: none;
+      }
+
+      .iconRow {
+        margin-top: 8px;
+      }
+
+      .ToolIcon {
+        margin: 0;
+        margin-inline-end: 8px;
+        width: 30px;
+        height: 30px;
+
+        &:focus {
+          outline: transparent;
+          box-shadow: 0 0 0 2px var(--focus-highlight-color);
+        }
+
+        &:hover {
+          background-color: var(--button-gray-2);
+        }
+
+        &:active {
+          background-color: var(--button-gray-3);
+        }
+
+        &:disabled {
+          cursor: not-allowed;
+        }
+      }
+    }
+
+    fieldset {
+      margin: 0;
+      padding: 0;
+      border: none;
+    }
+
+    .color-picker-control-container {
+      button {
+        margin: 0 0 0 0;
+      }
+    }
+
+    .color-picker {
+      transform: translateY(-100%);
+      top: -40px;
+
+      .color-picker-triangle {
+        bottom: -10px;
+        top: unset;
+        transform: rotate(180deg);
+      }
+      .color-picker-content--default {
+        grid-template-columns: repeat(8, auto);
+      }
+    }
+  }
+
   .divider {
     width: 1px;
     background-color: $oc-gray-2;
@@ -311,7 +449,18 @@ html {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 8px;
+
+    &.alt-mobile {
+      background-color: transparent;
+      > div {
+        display: flex;
+        gap: calc(var(--space-factor) * 2);
+      }
+
+      .ToolIcon {
+        box-shadow: 0 0 0 1px var(--overlay-bg-color);
+      }
+    }
   }
 
   .App-mobile-menu {

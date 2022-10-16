@@ -1,7 +1,7 @@
 import clsx from "clsx";
 import React, { useCallback } from "react";
 import { ActionManager } from "../actions/manager";
-import { CLASSES, LIBRARY_SIDEBAR_WIDTH } from "../constants";
+import { LIBRARY_SIDEBAR_WIDTH } from "../constants";
 import { exportCanvas } from "../data";
 import { isTextElement, showSelectedShapeActions } from "../element";
 import { NonDeletedExcalidrawElement } from "../element/types";
@@ -10,7 +10,11 @@ import { calculateScrollCenter, getSelectedElements } from "../scene";
 import { ExportType } from "../scene/types";
 import { AppProps, AppState, ExcalidrawProps, BinaryFiles } from "../types";
 import { muteFSAbortError } from "../utils";
-import { SelectedShapeActions, ShapesSwitcher } from "./Actions";
+import {
+  SelectedShapeActions,
+  SelectedShapeActionsCompact,
+  ShapesSwitcher,
+} from "./Actions";
 import { BackgroundPickerAndDarkModeToggle } from "./BackgroundPickerAndDarkModeToggle";
 import CollabButton from "./CollabButton";
 import { ErrorDialog } from "./ErrorDialog";
@@ -21,6 +25,7 @@ import { Island } from "./Island";
 import { LoadingMessage } from "./LoadingMessage";
 import { LockButton } from "./LockButton";
 import { MobileMenu } from "./MobileMenu";
+import { AlternativeMobileMenu } from "./AlternativeMobileMenu";
 import { PasteChartDialog } from "./PasteChartDialog";
 import { Section } from "./Section";
 import { HelpDialog } from "./HelpDialog";
@@ -64,6 +69,7 @@ interface LayerUIProps {
   library: Library;
   id: string;
   onImageAction: (data: { insertOnCanvasDirectly: boolean }) => void;
+  alternativeMobileUI?: boolean;
 }
 const LayerUI = ({
   actionManager,
@@ -87,6 +93,7 @@ const LayerUI = ({
   library,
   id,
   onImageAction,
+  alternativeMobileUI,
 }: LayerUIProps) => {
   const device = useDevice();
 
@@ -194,9 +201,9 @@ const LayerUI = ({
       <Island padding={2} style={{ zIndex: 1 }}>
         <Stack.Col gap={4}>
           <Stack.Row gap={1} justifyContent="space-between">
-            {actionManager.renderAction("clearCanvas")}
-            <Separator />
+            {/* {actionManager.renderAction("clearCanvas")} */}
             {actionManager.renderAction("loadScene")}
+            <Separator />
             {renderJSONExportDialog()}
             {renderImageExportDialog()}
             <Separator />
@@ -217,31 +224,19 @@ const LayerUI = ({
     </Section>
   );
 
-  const renderSelectedShapeActions = () => (
-    <Section
-      heading="selectedShapeActions"
-      className={clsx("zen-mode-transition", {
-        "transition-left": appState.zenModeEnabled,
-      })}
-    >
-      <Island
-        className={CLASSES.SHAPE_ACTIONS_MENU}
-        padding={2}
-        style={{
-          // we want to make sure this doesn't overflow so subtracting 200
-          // which is approximately height of zoom footer and top left menu items with some buffer
-          // if active file name is displayed, subtracting 248 to account for its height
-          maxHeight: `${appState.height - (appState.fileHandle ? 248 : 200)}px`,
-        }}
-      >
-        <SelectedShapeActions
-          appState={appState}
-          elements={elements}
-          renderAction={actionManager.renderAction}
-        />
-      </Island>
-    </Section>
-  );
+  const renderSelectedShapeActions = () => {
+    const Comp = alternativeMobileUI
+      ? SelectedShapeActionsCompact
+      : SelectedShapeActions;
+    return (
+      <Comp
+        appState={appState}
+        elements={elements}
+        renderAction={actionManager.renderAction}
+        isMobile={device.isMobile}
+      />
+    );
+  };
 
   const closeLibrary = useCallback(() => {
     const isDialogOpen = !!document.querySelector(".Dialog");
@@ -403,7 +398,27 @@ const LayerUI = ({
           }
         />
       )}
-      {device.isMobile && (
+      {device.isMobile && alternativeMobileUI && (
+        <AlternativeMobileMenu
+          appState={appState}
+          elements={elements}
+          actionManager={actionManager}
+          libraryMenu={libraryMenu}
+          renderJSONExportDialog={renderJSONExportDialog}
+          renderImageExportDialog={renderImageExportDialog}
+          setAppState={setAppState}
+          onCollabButtonClick={onCollabButtonClick}
+          onLockToggle={() => onLockToggle()}
+          onPenModeToggle={onPenModeToggle}
+          canvas={canvas}
+          isCollaborating={isCollaborating}
+          renderCustomFooter={renderCustomFooter}
+          onImageAction={onImageAction}
+          renderTopRightUI={renderTopRightUI}
+          renderCustomStats={renderCustomStats}
+        />
+      )}
+      {device.isMobile && !alternativeMobileUI && (
         <MobileMenu
           appState={appState}
           elements={elements}
