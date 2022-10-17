@@ -222,6 +222,7 @@ html {
 
     &.mobile {
       margin-top: 0;
+      align-items: flex-start;
       .props-group {
         flex-direction: row;
       }
