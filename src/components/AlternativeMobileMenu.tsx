@@ -123,6 +123,7 @@ export const AlternativeMobileMenu = ({
     }
     return (
       <div className="canvas-actions-container">
+        {<BackgroundPickerAndDarkModeToggle actionManager={actionManager} />}
         {actionManager.renderAction("clearCanvas")}
         {actionManager.renderAction("loadScene")}
         {renderJSONExportDialog()}
@@ -134,7 +135,6 @@ export const AlternativeMobileMenu = ({
             onClick={onCollabButtonClick}
           />
         )}
-        {<BackgroundPickerAndDarkModeToggle actionManager={actionManager} />}
       </div>
     );
   };
@@ -162,7 +162,9 @@ export const AlternativeMobileMenu = ({
         className={clsx("canvas-actions-container-backdrop", {
           visible: appState.openMenu === "canvas",
         })}
-        onPointerDown={() => {
+        onClick={(e) => {
+          e.stopPropagation();
+          e.bubbles = false;
           actionManager.executeAction(actionToggleCanvasMenu);
         }}
       />
@@ -261,7 +263,11 @@ export const CircularShapesSwitcher = ({
         className={clsx("backdrop", {
           visible: expanded,
         })}
-        onPointerDown={() => expanded && setExpanded(false)}
+        onClick={(e) => {
+          e.stopPropagation();
+          e.bubbles = false;
+          expanded && setExpanded(false);
+        }}
       />
       {MOBILE_SHAPES.map(({ value, icon, key }, index) => {
         const label = t(`toolBar.${value}`);

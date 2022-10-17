@@ -20,31 +20,31 @@
     }
   }
   .alt-mobile-canvas-menu {
+    box-sizing: border-box;
     position: fixed;
     display: flex;
     flex-direction: column;
     justify-content: center;
-    top: 0;
-    left: -100%;
-    bottom: 0;
+    left: 0;
+    right: 0;
+    bottom: -100%;
     overflow-y: auto;
     overflow-x: hidden;
-    width: 60%;
-    min-width: 100px;
-    max-width: 400px;
+    width: 100%;
     z-index: calc(var(--zIndex-layerUI) + 2);
     background-color: var(--island-bg-color);
 
     box-shadow: 0 0 3px 0px rgba(0, 0, 0, 0.33);
 
-    transition: left 0.2s ease-in-out;
+    transition: bottom 0.2s ease-in-out;
+    padding: calc(var(--space-factor) * 2);
+    padding-bottom: calc(var(--space-factor) * 2 + var(--sab));
 
     &.visible {
-      left: 0;
+      bottom: 0;
     }
   }
   .canvas-actions-container {
-    padding: calc(var(--space-factor) * 2);
     margin-top: var(--sat);
     display: flex;
     flex-direction: column;
