@@ -1,7 +1,7 @@
 import clsx from "clsx";
 import React, { useCallback } from "react";
 import { ActionManager } from "../actions/manager";
-import { CLASSES, LIBRARY_SIDEBAR_WIDTH } from "../constants";
+import { LIBRARY_SIDEBAR_WIDTH } from "../constants";
 import { exportCanvas } from "../data";
 import { isTextElement, showSelectedShapeActions } from "../element";
 import { NonDeletedExcalidrawElement } from "../element/types";
@@ -10,7 +10,11 @@ import { calculateScrollCenter, getSelectedElements } from "../scene";
 import { ExportType } from "../scene/types";
 import { AppProps, AppState, ExcalidrawProps, BinaryFiles } from "../types";
 import { muteFSAbortError } from "../utils";
-import { SelectedShapeActions, ShapesSwitcher } from "./Actions";
+import {
+  SelectedShapeActions,
+  SelectedShapeActionsCompact,
+  ShapesSwitcher,
+} from "./Actions";
 import { BackgroundPickerAndDarkModeToggle } from "./BackgroundPickerAndDarkModeToggle";
 import CollabButton from "./CollabButton";
 import { ErrorDialog } from "./ErrorDialog";
@@ -21,6 +25,7 @@ import { Island } from "./Island";
 import { LoadingMessage } from "./LoadingMessage";
 import { LockButton } from "./LockButton";
 import { MobileMenu } from "./MobileMenu";
+import { AlternativeMobileMenu } from "./AlternativeMobileMenu";
 import { PasteChartDialog } from "./PasteChartDialog";
 import { Section } from "./Section";
 import { HelpDialog } from "./HelpDialog";
@@ -40,6 +45,10 @@ import { useDevice } from "../components/App";
 import { Stats } from "./Stats";
 import { actionToggleStats } from "../actions/actionToggleStats";
 import Footer from "./Footer";
+import { hostSidebarCountersAtom, Sidebar } from "./Sidebar/Sidebar";
+import { jotaiScope } from "../jotai";
+import { useAtom } from "jotai";
+import Scene from "../scene/Scene";
 
 interface LayerUIProps {
   actionManager: ActionManager;
@@ -58,12 +67,15 @@ interface LayerUIProps {
   renderTopRightUI?: ExcalidrawProps["renderTopRightUI"];
   renderCustomFooter?: ExcalidrawProps["renderFooter"];
   renderCustomStats?: ExcalidrawProps["renderCustomStats"];
+  renderCustomSidebar?: ExcalidrawProps["renderSidebar"];
   libraryReturnUrl: ExcalidrawProps["libraryReturnUrl"];
   UIOptions: AppProps["UIOptions"];
   focusContainer: () => void;
   library: Library;
   id: string;
   onImageAction: (data: { insertOnCanvasDirectly: boolean }) => void;
+  alternativeMobileUI?: boolean;
+  scene: Scene;
 }
 const LayerUI = ({
   actionManager,
@@ -81,12 +93,15 @@ const LayerUI = ({
   renderTopRightUI,
   renderCustomFooter,
   renderCustomStats,
+  renderCustomSidebar,
   libraryReturnUrl,
   UIOptions,
   focusContainer,
   library,
   id,
   onImageAction,
+  alternativeMobileUI,
+  scene,
 }: LayerUIProps) => {
   const device = useDevice();
 
@@ -182,21 +197,24 @@ const LayerUI = ({
     );
   };
 
+  const CanvasActionsStackChild = alternativeMobileUI ? Stack.Col : Stack.Row;
+
   const renderCanvasActions = () => (
     <Section
       heading="canvasActions"
       className={clsx("zen-mode-transition", {
         "transition-left": appState.zenModeEnabled,
+        "alt-mobile-compact": alternativeMobileUI,
       })}
     >
       {/* the zIndex ensures this menu has higher stacking order,
          see https://github.com/excalidraw/excalidraw/pull/1445 */}
       <Island padding={2} style={{ zIndex: 1 }}>
         <Stack.Col gap={4}>
-          <Stack.Row gap={1} justifyContent="space-between">
-            {actionManager.renderAction("clearCanvas")}
-            <Separator />
+          <CanvasActionsStackChild gap={1} justifyContent="space-between">
+            {/* {actionManager.renderAction("clearCanvas")} */}
             {actionManager.renderAction("loadScene")}
+            <Separator />
             {renderJSONExportDialog()}
             {renderImageExportDialog()}
             <Separator />
@@ -207,8 +225,11 @@ const LayerUI = ({
                 onClick={onCollabButtonClick}
               />
             )}
-          </Stack.Row>
-          <BackgroundPickerAndDarkModeToggle actionManager={actionManager} />
+          </CanvasActionsStackChild>
+          <BackgroundPickerAndDarkModeToggle
+            actionManager={actionManager}
+            compact={alternativeMobileUI}
+          />
           {appState.fileHandle && (
             <>{actionManager.renderAction("saveToActiveFile")}</>
           )}
@@ -217,31 +238,19 @@ const LayerUI = ({
     </Section>
   );
 
-  const renderSelectedShapeActions = () => (
-    <Section
-      heading="selectedShapeActions"
-      className={clsx("zen-mode-transition", {
-        "transition-left": appState.zenModeEnabled,
-      })}
-    >
-      <Island
-        className={CLASSES.SHAPE_ACTIONS_MENU}
-        padding={2}
-        style={{
-          // we want to make sure this doesn't overflow so subtracting 200
-          // which is approximately height of zoom footer and top left menu items with some buffer
-          // if active file name is displayed, subtracting 248 to account for its height
-          maxHeight: `${appState.height - (appState.fileHandle ? 248 : 200)}px`,
-        }}
-      >
-        <SelectedShapeActions
-          appState={appState}
-          elements={elements}
-          renderAction={actionManager.renderAction}
-        />
-      </Island>
-    </Section>
-  );
+  const renderSelectedShapeActions = () => {
+    const Comp = alternativeMobileUI
+      ? SelectedShapeActionsCompact
+      : SelectedShapeActions;
+    return (
+      <Comp
+        appState={appState}
+        elements={elements}
+        renderAction={actionManager.renderAction}
+        isMobile={device.isMobile}
+      />
+    );
+  };
 
   const closeLibrary = useCallback(() => {
     const isDialogOpen = !!document.querySelector(".Dialog");
@@ -250,7 +259,7 @@ const LayerUI = ({
     if (isDialogOpen) {
       return;
     }
-    setAppState({ isLibraryOpen: false });
+    setAppState({ openSidebar: null });
   }, [setAppState]);
 
   const deselectItems = useCallback(() => {
@@ -260,23 +269,24 @@ const LayerUI = ({
     });
   }, [setAppState]);
 
-  const libraryMenu = appState.isLibraryOpen ? (
-    <LibraryMenu
-      pendingElements={getSelectedElements(elements, appState, true)}
-      onClose={closeLibrary}
-      onInsertLibraryItems={(libraryItems) => {
-        onInsertElements(distributeLibraryItemsOnSquareGrid(libraryItems));
-      }}
-      onAddToLibrary={deselectItems}
-      setAppState={setAppState}
-      libraryReturnUrl={libraryReturnUrl}
-      focusContainer={focusContainer}
-      library={library}
-      files={files}
-      id={id}
-      appState={appState}
-    />
-  ) : null;
+  const libraryMenu =
+    appState.openSidebar === "library" ? (
+      <LibraryMenu
+        pendingElements={getSelectedElements(elements, appState, true)}
+        onClose={closeLibrary}
+        onInsertLibraryItems={(libraryItems) => {
+          onInsertElements(distributeLibraryItemsOnSquareGrid(libraryItems));
+        }}
+        onAddToLibrary={deselectItems}
+        setAppState={setAppState}
+        libraryReturnUrl={libraryReturnUrl}
+        focusContainer={focusContainer}
+        library={library}
+        files={files}
+        id={id}
+        appState={appState}
+      />
+    ) : null;
 
   const renderFixedSideContainer = () => {
     const shouldRenderSelectedShapeActions = showSelectedShapeActions(
@@ -288,7 +298,7 @@ const LayerUI = ({
       <FixedSideContainer side="top">
         <div className="App-menu App-menu_top">
           <Stack.Col
-            gap={4}
+            gap={alternativeMobileUI ? 0 : 4}
             className={clsx({
               "disable-pointerEvents": appState.zenModeEnabled,
             })}
@@ -301,7 +311,7 @@ const LayerUI = ({
           {!appState.viewModeEnabled && (
             <Section heading="shapes">
               {(heading: React.ReactNode) => (
-                <Stack.Col gap={4} align="start">
+                <Stack.Col align="start" gap={alternativeMobileUI ? 0 : 4}>
                   <Stack.Row
                     gap={1}
                     className={clsx("App-toolbar-container", {
@@ -331,6 +341,7 @@ const LayerUI = ({
                         appState={appState}
                         elements={elements}
                         isMobile={device.isMobile}
+                        device={device}
                       />
                       {heading}
                       <Stack.Row gap={1}>
@@ -375,6 +386,8 @@ const LayerUI = ({
     );
   };
 
+  const [hostSidebarCounters] = useAtom(hostSidebarCountersAtom, jotaiScope);
+
   return (
     <>
       {appState.isLoading && <LoadingMessage delay={250} />}
@@ -403,8 +416,8 @@ const LayerUI = ({
           }
         />
       )}
-      {device.isMobile && (
-        <MobileMenu
+      {device.isMobile && alternativeMobileUI && (
+        <AlternativeMobileMenu
           appState={appState}
           elements={elements}
           actionManager={actionManager}
@@ -423,6 +436,28 @@ const LayerUI = ({
           renderCustomStats={renderCustomStats}
         />
       )}
+      {device.isMobile && !alternativeMobileUI && (
+        <MobileMenu
+          appState={appState}
+          elements={elements}
+          actionManager={actionManager}
+          libraryMenu={libraryMenu}
+          renderJSONExportDialog={renderJSONExportDialog}
+          renderImageExportDialog={renderImageExportDialog}
+          setAppState={setAppState}
+          onCollabButtonClick={onCollabButtonClick}
+          onLockToggle={() => onLockToggle()}
+          onPenModeToggle={onPenModeToggle}
+          canvas={canvas}
+          isCollaborating={isCollaborating}
+          renderCustomFooter={renderCustomFooter}
+          onImageAction={onImageAction}
+          renderTopRightUI={renderTopRightUI}
+          renderCustomStats={renderCustomStats}
+          renderCustomSidebar={renderCustomSidebar}
+          device={device}
+        />
+      )}
 
       {!device.isMobile && (
         <>
@@ -435,8 +470,9 @@ const LayerUI = ({
                   !isTextElement(appState.editingElement)),
             })}
             style={
-              appState.isLibraryOpen &&
-              appState.isLibraryMenuDocked &&
+              ((appState.openSidebar === "library" &&
+                appState.isSidebarDocked) ||
+                hostSidebarCounters.docked) &&
               device.canDeviceFitSidebar
                 ? { width: `calc(100% - ${LIBRARY_SIDEBAR_WIDTH}px)` }
                 : {}
@@ -448,6 +484,7 @@ const LayerUI = ({
               actionManager={actionManager}
               renderCustomFooter={renderCustomFooter}
               showExitZenModeBtn={showExitZenModeBtn}
+              scene={scene}
             />
             {appState.showStats && (
               <Stats
@@ -473,9 +510,26 @@ const LayerUI = ({
               </button>
             )}
           </div>
-          {appState.isLibraryOpen && (
-            <div className="layer-ui__sidebar">{libraryMenu}</div>
-          )}
+          {appState.openSidebar === "customSidebar" ? (
+            renderCustomSidebar?.()
+          ) : appState.openSidebar === "library" ? (
+            <Sidebar
+              __isInternal
+              // necessary to remount when switching between internal
+              // and custom (host app) sidebar, so that the `props.onClose`
+              // is colled correctly
+              key="library"
+              onDock={(docked) => {
+                trackEvent(
+                  "library",
+                  `toggleLibraryDock (${docked ? "dock" : "undock"})`,
+                  `sidebar (${device.isMobile ? "mobile" : "desktop"})`,
+                );
+              }}
+            >
+              {libraryMenu}
+            </Sidebar>
+          ) : null}
         </>
       )}
     </>
@@ -495,8 +549,12 @@ const areEqual = (prev: LayerUIProps, next: LayerUIProps) => {
   const nextAppState = getNecessaryObj(next.appState);
 
   const keys = Object.keys(prevAppState) as (keyof Partial<AppState>)[];
+
   return (
     prev.renderCustomFooter === next.renderCustomFooter &&
+    prev.renderTopRightUI === next.renderTopRightUI &&
+    prev.renderCustomStats === next.renderCustomStats &&
+    prev.renderCustomSidebar === next.renderCustomSidebar &&
     prev.langCode === next.langCode &&
     prev.elements === next.elements &&
     prev.files === next.files &&

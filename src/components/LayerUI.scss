@@ -1,48 +1,6 @@
 @import "open-color/open-color";
 @import "../css/variables.module";
 
-.layer-ui__sidebar {
-  position: absolute;
-  top: var(--sat);
-  bottom: var(--sab);
-  right: var(--sar);
-  z-index: 5;
-
-  box-shadow: var(--shadow-island);
-  overflow: hidden;
-  border-radius: var(--border-radius-lg);
-  margin: var(--space-factor);
-  width: calc(#{$right-sidebar-width} - var(--space-factor) * 2);
-
-  .Island {
-    box-shadow: none;
-  }
-
-  .ToolIcon__icon {
-    border-radius: var(--border-radius-md);
-  }
-
-  .ToolIcon__icon__close {
-    .Modal__close {
-      width: calc(var(--space-factor) * 7);
-      height: calc(var(--space-factor) * 7);
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      color: var(--color-text);
-    }
-  }
-
-  .Island {
-    --padding: 0;
-    background-color: var(--island-bg-color);
-    border-radius: var(--border-radius-lg);
-    padding: calc(var(--padding) * var(--space-factor));
-    position: relative;
-    transition: box-shadow 0.5s ease-in-out;
-  }
-}
-
 .excalidraw {
   .layer-ui__wrapper.animate {
     transition: width 0.1s ease-in-out;
@@ -64,10 +22,17 @@
 
     &__footer {
       width: 100%;
-
       &-right {
         z-index: 100;
         display: flex;
+      }
+    }
+    .layer-ui__wrapper__footer {
+      bottom: var(--sab);
+
+      .excalidraw-page-awareness-desktop {
+        position: absolute;
+        margin: auto;
       }
     }
 
@@ -147,6 +112,16 @@
       margin-top: auto;
       margin-bottom: auto;
       margin-inline-end: 1em;
+    }
+
+    .alt-mobile-compact {
+      .color-picker-control-container {
+        display: flex;
+        justify-content: center;
+        button {
+          margin: 0;
+        }
+      }
     }
   }
 }

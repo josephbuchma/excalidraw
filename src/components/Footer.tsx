@@ -1,5 +1,12 @@
 import clsx from "clsx";
+import {
+  actionAddPage,
+  actionDeletePage,
+  actionNextPage,
+  actionPrevPage,
+} from "../actions";
 import { ActionManager } from "../actions/manager";
+import Scene from "../scene/Scene";
 import { AppState, ExcalidrawProps } from "../types";
 import {
   ExitZenModeAction,
@@ -9,6 +16,7 @@ import {
 } from "./Actions";
 import { useDevice } from "./App";
 import { Island } from "./Island";
+import { PageAwarenessDesktop } from "./PageAwareness";
 import { Section } from "./Section";
 import Stack from "./Stack";
 
@@ -17,11 +25,13 @@ const Footer = ({
   actionManager,
   renderCustomFooter,
   showExitZenModeBtn,
+  scene,
 }: {
   appState: AppState;
   actionManager: ActionManager;
   renderCustomFooter?: ExcalidrawProps["renderFooter"];
   showExitZenModeBtn: boolean;
+  scene: Scene;
 }) => {
   const device = useDevice();
   const showFinalize =
@@ -68,6 +78,7 @@ const Footer = ({
                 </div>
               </>
             )}
+
             {showFinalize && (
               <FinalizeAction
                 renderAction={actionManager.renderAction}
@@ -75,6 +86,19 @@ const Footer = ({
                   "layer-ui__wrapper__footer-left--transition-left":
                     appState.zenModeEnabled,
                 })}
+              />
+            )}
+            {appState.currentPageId && !device.isMobile && (
+              <PageAwarenessDesktop
+                pages={scene.getPageIds()}
+                currentPageId={appState.currentPageId}
+                onNextPage={() => actionManager.executeAction(actionNextPage)}
+                onPrevPage={() => actionManager.executeAction(actionPrevPage)}
+                onAddPage={() => actionManager.executeAction(actionAddPage)}
+                onDeletePage={() =>
+                  actionManager.executeAction(actionDeletePage)
+                }
+                isViewMode={appState.viewModeEnabled}
               />
             )}
           </Section>

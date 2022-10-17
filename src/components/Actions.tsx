@@ -189,6 +189,99 @@ export const SelectedShapeActions = ({
   );
 };
 
+export const SelectedShapeActionsCompact = ({
+  appState,
+  elements,
+  renderAction,
+  isMobile,
+}: {
+  appState: AppState;
+  elements: readonly ExcalidrawElement[];
+  renderAction: ActionManager["renderAction"];
+  isMobile?: boolean;
+}) => {
+  const targetElements = getTargetElements(
+    getNonDeletedElements(elements),
+    appState,
+  );
+
+  const showFillIcons =
+    hasBackground(appState.activeTool.type) ||
+    targetElements.some(
+      (element) =>
+        hasBackground(element.type) && !isTransparent(element.backgroundColor),
+    );
+  const showChangeBackgroundIcons =
+    hasBackground(appState.activeTool.type) ||
+    targetElements.some((element) => hasBackground(element.type));
+
+  let commonSelectedType: string | null = targetElements[0]?.type || null;
+
+  for (const element of targetElements) {
+    if (element.type !== commonSelectedType) {
+      commonSelectedType = null;
+      break;
+    }
+  }
+
+  return (
+    <div className={clsx("compact-panel-row", { mobile: isMobile })}>
+      <div className="props-group">
+        {showChangeBackgroundIcons && renderAction("changeBackgroundColor")}
+        {showFillIcons && renderAction("changeFillStyle")}
+      </div>
+      <div
+        style={{
+          flexDirection: "row",
+          display: "flex",
+          width: "100%",
+          justifyContent: "space-between",
+          flex: 1,
+        }}
+      >
+        <div className="props-group">
+          {((hasStrokeColor(appState.activeTool.type) &&
+            appState.activeTool.type !== "image" &&
+            commonSelectedType !== "image") ||
+            targetElements.some((element) => hasStrokeColor(element.type))) &&
+            renderAction("changeStrokeColor")}
+          {(hasStrokeWidth(appState.activeTool.type) ||
+            targetElements.some((element) => hasStrokeWidth(element.type))) &&
+            renderAction("changeStrokeWidth")}
+
+          {(appState.activeTool.type === "freedraw" ||
+            targetElements.some((element) => element.type === "freedraw")) &&
+            renderAction("changeStrokeShape")}
+
+          {(hasStrokeStyle(appState.activeTool.type) ||
+            targetElements.some((element) => hasStrokeStyle(element.type))) && (
+            <>
+              {renderAction("changeStrokeStyle")}
+              {renderAction("changeSloppiness")}
+            </>
+          )}
+
+          {(canChangeSharpness(appState.activeTool.type) ||
+            targetElements.some((element) =>
+              canChangeSharpness(element.type),
+            )) && <>{renderAction("changeSharpness")}</>}
+
+          {(hasText(appState.activeTool.type) ||
+            targetElements.some((element) => hasText(element.type))) && (
+            <>
+              {renderAction("changeFontSize")}
+
+              {renderAction("changeFontFamily")}
+
+              {renderAction("changeTextAlign")}
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
 export const ShapesSwitcher = ({
   canvas,
   activeTool,

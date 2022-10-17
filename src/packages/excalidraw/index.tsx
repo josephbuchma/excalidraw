@@ -21,6 +21,7 @@ const ExcalidrawBase = (props: ExcalidrawProps) => {
     onPointerUpdate,
     renderTopRightUI,
     renderFooter,
+    renderSidebar,
     langCode = defaultLang.code,
     viewModeEnabled,
     zenModeEnabled,
@@ -41,6 +42,7 @@ const ExcalidrawBase = (props: ExcalidrawProps) => {
     defaultCanvasSize,
     alternativeGestures,
     multiPageMode,
+    alternativeMobileUI,
   } = props;
 
   const canvasActions = props.UIOptions?.canvasActions;
@@ -117,6 +119,8 @@ const ExcalidrawBase = (props: ExcalidrawProps) => {
           defaultCanvasSize={defaultCanvasSize}
           multiPageMode={multiPageMode}
           alternativeGestures={alternativeGestures}
+          alternativeMobileUI={alternativeMobileUI}
+          renderSidebar={renderSidebar}
         />
       </Provider>
     </InitializeApp>
@@ -238,3 +242,5 @@ export {
   sceneCoordsToViewportCoords,
   viewportCoordsToSceneCoords,
 } from "../../utils";
+
+export { Sidebar } from "../../components/Sidebar/Sidebar";

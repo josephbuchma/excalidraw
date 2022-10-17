@@ -37,7 +37,7 @@ export const actionChangeViewBackgroundColor = register({
       commitToHistory: !!value.viewBackgroundColor,
     };
   },
-  PanelComponent: ({ elements, appState, updateData }) => {
+  PanelComponent: ({ elements, appState, updateData, data }) => {
     return (
       <div style={{ position: "relative" }}>
         <ColorPicker
@@ -52,6 +52,7 @@ export const actionChangeViewBackgroundColor = register({
           data-testid="canvas-background-picker"
           elements={elements}
           appState={appState}
+          showInput={data?.showInput}
         />
       </div>
     );

@@ -1,0 +1,167 @@
+@import "open-color/open-color";
+@import "../css/variables.module";
+
+.excalidraw {
+  .canvas-actions-container-backdrop {
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: rgba(0, 0, 0, 0.5);
+    opacity: 0%;
+    z-index: calc(var(--zIndex-layerUI) + 2);
+    pointer-events: none;
+
+    &.visible {
+      pointer-events: all;
+      opacity: 100%;
+      transition: opacity 0.3s ease-in-out;
+    }
+  }
+  .alt-mobile-canvas-menu {
+    box-sizing: border-box;
+    position: fixed;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    left: 0;
+    right: 0;
+    bottom: -100%;
+    overflow-y: auto;
+    overflow-x: hidden;
+    width: 100%;
+    z-index: calc(var(--zIndex-layerUI) + 2);
+    background-color: var(--island-bg-color);
+
+    box-shadow: 0 0 3px 0px rgba(0, 0, 0, 0.33);
+
+    transition: bottom 0.2s ease-in-out;
+    padding: calc(var(--space-factor) * 2);
+    padding-bottom: calc(var(--space-factor) * 2 + var(--sab));
+
+    &.visible {
+      bottom: 0;
+    }
+  }
+  .canvas-actions-container {
+    margin-top: var(--sat);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-factor);
+  }
+  .alt-mobile-buttons-top {
+    margin-top: var(--sat);
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: var(--zIndex-layerUI);
+    padding: 5px;
+    padding-top: 10px;
+    position: absolute;
+    display: flex;
+    justify-content: space-between;
+    gap: var(--space-factor);
+  }
+  .page-side-button {
+    position: absolute;
+    top: 50%;
+    z-index: var(--zIndex-layerUI);
+    .ToolIcon {
+      box-shadow: 0px 0px 4px rgba(0, 0, 0, 0.3);
+    }
+    .ToolIcon,
+    .ToolIcon > * {
+      height: 70px;
+    }
+    &.prev {
+      left: -10px;
+      .ToolIcon {
+        border-radius: 0 50% 50% 0;
+      }
+    }
+    &.next {
+      right: -10px;
+      .ToolIcon {
+        border-radius: 50% 0 0 50%;
+      }
+    }
+  }
+
+  .circular-shapes-switcher {
+    --dur: 0.2s;
+    --button-size: 55px;
+
+    width: var(--button-size);
+
+    max-height: min-content;
+    height: 100%;
+    border-radius: 50%;
+    position: relative;
+    z-index: var(--zIndex-layerUI);
+    pointer-events: all;
+    bottom: calc(var(--button-size) * 0.15);
+    margin-left: -2px;
+
+    .backdrop {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      opacity: 0%;
+      background: rgba(0, 0, 0, 0.3);
+      pointer-events: none;
+      transition: opacity var(--dur) ease-in-out;
+
+      &.visible {
+        opacity: 100%;
+        pointer-events: all;
+      }
+    }
+
+    .tool-circle-button {
+      box-shadow: 0px 2px 3px rgba(0, 0, 0, 0.05);
+      z-index: var(--zIndex-layerUI);
+      transition: all var(--dur) ease-in-out;
+      transition-property: transform, width, height, left, top, pointer-events,
+        opacity;
+      display: block;
+      position: absolute;
+      top: 0;
+      width: var(--button-size);
+      height: var(--button-size);
+      overflow: hidden;
+      background-color: var(--button-gray-1);
+      border: 1px solid var(--button-gray-1);
+      border-radius: 50%;
+      text-align: center;
+      line-height: var(--buttons-size);
+
+      &.current {
+        z-index: calc(var(--zIndex-layerUI) + 1);
+        background: transparent;
+      }
+    }
+
+    &.expanded {
+      .tool-circle-button {
+        pointer-events: all;
+        top: 50%;
+
+        &.current {
+          pointer-events: none;
+        }
+      }
+    }
+  }
+
+  footer.App-toolbar {
+    box-shadow: none !important;
+  }
+  .App-bottom-bar {
+    button {
+      pointer-events: all;
+    }
+  }
+}
