@@ -45,6 +45,7 @@ import { useDevice } from "../components/App";
 import { Stats } from "./Stats";
 import { actionToggleStats } from "../actions/actionToggleStats";
 import Footer from "./Footer";
+import Scene from "../scene/Scene";
 
 interface LayerUIProps {
   actionManager: ActionManager;
@@ -70,6 +71,7 @@ interface LayerUIProps {
   id: string;
   onImageAction: (data: { insertOnCanvasDirectly: boolean }) => void;
   alternativeMobileUI?: boolean;
+  scene: Scene;
 }
 const LayerUI = ({
   actionManager,
@@ -94,6 +96,7 @@ const LayerUI = ({
   id,
   onImageAction,
   alternativeMobileUI,
+  scene,
 }: LayerUIProps) => {
   const device = useDevice();
 
@@ -463,6 +466,7 @@ const LayerUI = ({
               actionManager={actionManager}
               renderCustomFooter={renderCustomFooter}
               showExitZenModeBtn={showExitZenModeBtn}
+              scene={scene}
             />
             {appState.showStats && (
               <Stats

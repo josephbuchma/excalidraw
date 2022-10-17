@@ -35,10 +35,6 @@ import {
   actionLink,
   actionToggleLock,
   actionToggleLinearEditor,
-  actionNextPage,
-  actionPrevPage,
-  actionAddPage,
-  actionDeletePage,
 } from "../actions";
 import { createRedoAction, createUndoAction } from "../actions/actionHistory";
 import { ActionManager } from "../actions/manager";
@@ -240,7 +236,7 @@ import {
 } from "../utils";
 import ContextMenu, { ContextMenuOption } from "./ContextMenu";
 import LayerUI from "./LayerUI";
-import { PageAwarenessMobile, PageAwarenessDesktop } from "./PageAwareness";
+import { PageAwarenessMobile } from "./PageAwareness";
 import { Toast } from "./Toast";
 import { actionToggleViewMode } from "../actions/actionToggleViewMode";
 import {
@@ -558,25 +554,6 @@ class App extends React.Component<AppProps, AppState> {
                     currentPageId={this.state.currentPageId}
                   />
                 )}
-                {this.state.currentPageId && !this.device.isMobile && (
-                  <PageAwarenessDesktop
-                    pages={this.scene.getPageIds()}
-                    currentPageId={this.state.currentPageId}
-                    onNextPage={() =>
-                      this.actionManager.executeAction(actionNextPage)
-                    }
-                    onPrevPage={() =>
-                      this.actionManager.executeAction(actionPrevPage)
-                    }
-                    onAddPage={() =>
-                      this.actionManager.executeAction(actionAddPage)
-                    }
-                    onDeletePage={() =>
-                      this.actionManager.executeAction(actionDeletePage)
-                    }
-                    isViewMode={this.state.viewModeEnabled}
-                  />
-                )}
                 <LayerUI
                   canvas={this.canvas}
                   appState={this.state}
@@ -610,6 +587,7 @@ class App extends React.Component<AppProps, AppState> {
                   id={this.id}
                   onImageAction={this.onImageAction}
                   alternativeMobileUI={this.props.alternativeMobileUI}
+                  scene={this.scene}
                 />
                 <div className="excalidraw-textEditorContainer" />
                 <div className="excalidraw-contextMenuContainer" />

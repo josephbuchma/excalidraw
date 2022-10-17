@@ -64,10 +64,17 @@
 
     &__footer {
       width: 100%;
-
       &-right {
         z-index: 100;
         display: flex;
+      }
+    }
+    .layer-ui__wrapper__footer {
+      bottom: var(--sab);
+
+      .excalidraw-page-awareness-desktop {
+        position: absolute;
+        margin: auto;
       }
     }
 
