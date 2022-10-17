@@ -192,18 +192,21 @@ const LayerUI = ({
     );
   };
 
+  const CanvasActionsStackChild = alternativeMobileUI ? Stack.Col : Stack.Row;
+
   const renderCanvasActions = () => (
     <Section
       heading="canvasActions"
       className={clsx("zen-mode-transition", {
         "transition-left": appState.zenModeEnabled,
+        "alt-mobile-compact": alternativeMobileUI,
       })}
     >
       {/* the zIndex ensures this menu has higher stacking order,
          see https://github.com/excalidraw/excalidraw/pull/1445 */}
       <Island padding={2} style={{ zIndex: 1 }}>
         <Stack.Col gap={4}>
-          <Stack.Row gap={1} justifyContent="space-between">
+          <CanvasActionsStackChild gap={1} justifyContent="space-between">
             {/* {actionManager.renderAction("clearCanvas")} */}
             {actionManager.renderAction("loadScene")}
             <Separator />
@@ -217,8 +220,11 @@ const LayerUI = ({
                 onClick={onCollabButtonClick}
               />
             )}
-          </Stack.Row>
-          <BackgroundPickerAndDarkModeToggle actionManager={actionManager} />
+          </CanvasActionsStackChild>
+          <BackgroundPickerAndDarkModeToggle
+            actionManager={actionManager}
+            compact={alternativeMobileUI}
+          />
           {appState.fileHandle && (
             <>{actionManager.renderAction("saveToActiveFile")}</>
           )}
@@ -286,7 +292,7 @@ const LayerUI = ({
       <FixedSideContainer side="top">
         <div className="App-menu App-menu_top">
           <Stack.Col
-            gap={4}
+            gap={alternativeMobileUI ? 0 : 4}
             className={clsx({
               "disable-pointerEvents": appState.zenModeEnabled,
             })}
@@ -299,7 +305,7 @@ const LayerUI = ({
           {!appState.viewModeEnabled && (
             <Section heading="shapes">
               {(heading: React.ReactNode) => (
-                <Stack.Col gap={4} align="start">
+                <Stack.Col align="start" gap={alternativeMobileUI ? 0 : 4}>
                   <Stack.Row
                     gap={1}
                     className={clsx("App-toolbar-container", {

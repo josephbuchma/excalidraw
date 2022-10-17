@@ -197,7 +197,7 @@ html {
     padding-top: var(--space-factor);
     gap: var(--space-factor);
     margin-bottom: calc(var(--space-factor) * 4);
-    margin-top: 60px;
+
     &:empty {
       display: none;
     }
@@ -382,7 +382,7 @@ html {
       justify-content: center;
       align-items: center;
       svg {
-        width: 35px;
+        width: 28px;
         height: 14px;
         padding: 2px;
         opacity: 0.6;

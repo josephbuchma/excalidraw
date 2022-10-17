@@ -155,5 +155,15 @@
       margin-bottom: auto;
       margin-inline-end: 1em;
     }
+
+    .alt-mobile-compact {
+      .color-picker-control-container {
+        display: flex;
+        justify-content: center;
+        button {
+          margin: 0;
+        }
+      }
+    }
   }
 }
