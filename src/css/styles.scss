@@ -5,10 +5,12 @@
   --zIndex-canvas: 1;
   --zIndex-wysiwyg: 2;
   --zIndex-layerUI: 3;
+  --app-height: 100%;
 }
 
 html {
   background: var(--behind-canvas-color);
+  width: 100vw;
   height: 100vh;
 }
 
@@ -22,6 +24,7 @@ html {
   left: 0;
   right: 0;
   height: 100%;
+  max-height: var(--app-height);
   width: 100%;
 
   &:focus {
