@@ -263,7 +263,7 @@ export const CircularShapesSwitcher = ({
         className={clsx("backdrop", {
           visible: expanded,
         })}
-        onClick={(e) => {
+        onPointerDown={(e) => {
           e.stopPropagation();
           e.bubbles = false;
           expanded && setExpanded(false);
