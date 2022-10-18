@@ -2848,8 +2848,8 @@ class App extends React.Component<AppProps, AppState> {
     }
 
     const pinch: AppState["pinchState"] = {
-      elSnap: elem,
-      boundTextElSnap: getBoundTextElement(elem),
+      elSnap: deepCopyElement(elem),
+      boundTextElSnap: deepCopyElement(getBoundTextElement(elem)),
       focalPoint:
         elem.type === "image"
           ? {
@@ -2909,9 +2909,9 @@ class App extends React.Component<AppProps, AppState> {
           return;
         }
 
-        const updatedElements = this.scene.getNonDeletedElements().map((el) => {
+        this.scene.getNonDeletedElements().forEach((el) => {
           if (el.id !== elem.id && pinch.boundTextElSnap?.id !== el.id) {
-            return el;
+            return;
           }
           const elSnap =
             el.id === pinch.elSnap.id ? pinch.elSnap : pinch.boundTextElSnap!;
@@ -2921,7 +2921,7 @@ class App extends React.Component<AppProps, AppState> {
             el.type === "text" &&
             !el.isDeleted &&
             measureFontSizeFromWH(el, width, height);
-          return newElementWith(el, {
+          mutateElement(el, {
             x:
               el.x +
               deltaX / this.state.zoom.value -
@@ -2935,10 +2935,6 @@ class App extends React.Component<AppProps, AppState> {
             ...(font && { fontSize: font.size, baseline: font.baseline }),
           });
         });
-        if (!isPageElements(updatedElements)) {
-          return;
-        }
-        this.scene.replaceAllElements(updatedElements);
         updateBoundElements(elem);
         return;
       }
