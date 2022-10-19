@@ -63,30 +63,6 @@
     justify-content: space-between;
     gap: var(--space-factor);
   }
-  .page-side-button {
-    position: absolute;
-    top: 50%;
-    z-index: var(--zIndex-layerUI);
-    .ToolIcon {
-      box-shadow: 0px 0px 4px rgba(0, 0, 0, 0.3);
-    }
-    .ToolIcon,
-    .ToolIcon > * {
-      height: 70px;
-    }
-    &.prev {
-      left: -10px;
-      .ToolIcon {
-        border-radius: 0 50% 50% 0;
-      }
-    }
-    &.next {
-      right: -10px;
-      .ToolIcon {
-        border-radius: 50% 0 0 50%;
-      }
-    }
-  }
 
   .circular-shapes-switcher {
     --dur: 0.2s;
