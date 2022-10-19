@@ -5,11 +5,12 @@
   --zIndex-canvas: 1;
   --zIndex-wysiwyg: 2;
   --zIndex-layerUI: 3;
+
+  /* this property is updated in JS */
   --app-height: 100%;
 }
 
 html {
-  background: var(--behind-canvas-color);
   width: 100vw;
   height: 100vh;
 }
@@ -19,13 +20,13 @@ html {
   overflow: hidden;
   color: var(--text-primary-color);
   display: flex;
-  top: 0;
-  bottom: 0;
-  left: 0;
-  right: 0;
   height: 100%;
   max-height: var(--app-height);
   width: 100%;
+
+  /* hack for making sure we fill whole screen with background color on mobile devices */
+  --fill-blanc-shadow: calc(100vh - var(--app-height));
+  box-shadow: 0px 0px 0px var(--fill-blanc-shadow) var(--behind-canvas-color);
 
   &:focus {
     outline: none;
@@ -464,6 +465,8 @@ html {
       .ToolIcon {
         box-shadow: 0 0 0 1px var(--overlay-bg-color);
       }
+
+      bottom: var(--sab);
     }
   }
 
