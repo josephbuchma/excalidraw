@@ -49,6 +49,7 @@ import { hostSidebarCountersAtom, Sidebar } from "./Sidebar/Sidebar";
 import { jotaiScope } from "../jotai";
 import { useAtom } from "jotai";
 import Scene from "../scene/Scene";
+import { PageAwarenessMobile } from "./PageAwareness";
 
 interface LayerUIProps {
   actionManager: ActionManager;
@@ -414,6 +415,12 @@ const LayerUI = ({
               pasteDialog: { shown: false, data: null },
             })
           }
+        />
+      )}
+      {device.isMobile && appState.currentPageId && (
+        <PageAwarenessMobile
+          currentPageId={appState.currentPageId}
+          pages={scene.getPageIds()}
         />
       )}
       {device.isMobile && alternativeMobileUI && (

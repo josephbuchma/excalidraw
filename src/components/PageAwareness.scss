@@ -2,7 +2,7 @@
 
 .excalidraw {
   .excalidraw-page-awareness-mobile {
-    position: fixed;
+    position: absolute;
     top: calc(var(--sat) + 2px);
     left: 0px;
     right: 0px;
