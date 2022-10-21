@@ -276,6 +276,10 @@ import {
 } from "../element/Hyperlink";
 import { shouldShowBoundingBox } from "../element/transformHandles";
 import { measureFontSizeFromWH } from "../element/resizeElements";
+import {
+  cacheEraseCircleImage,
+  maybeUpdateEraseDropzoneElement,
+} from "../drag-to-delete";
 
 const deviceContextInitialValue = {
   isSmScreen: false,
@@ -326,6 +330,7 @@ let isDraggingScrollBar: boolean = false;
 let currentScrollBars: ScrollBars = { horizontal: null, vertical: null };
 let touchTimeout = 0;
 let invalidateContextMenu = false;
+let movedAfterTouch = false; // NOTE: valid only after pointer down event;
 
 // remove this hack when we can sync render & resizeObserver (state update)
 // to rAF. See #5439
@@ -960,6 +965,8 @@ class App extends React.Component<AppProps, AppState> {
     this.excalidrawContainerValue.container =
       this.excalidrawContainerRef.current;
 
+    cacheEraseCircleImage(this.imageCache);
+
     if (
       process.env.NODE_ENV === ENV.TEST ||
       process.env.NODE_ENV === ENV.DEVELOPMENT
@@ -1343,6 +1350,12 @@ class App extends React.Component<AppProps, AppState> {
         ),
       });
     }
+
+    maybeUpdateEraseDropzoneElement(
+      prevState,
+      this.state,
+      this.setState.bind(this),
+    );
   }
 
   private renderScene = () => {
@@ -1434,6 +1447,7 @@ class App extends React.Component<AppProps, AppState> {
             this.lastPointerDown &&
               this.shouldDisableTransformUI(this.lastPointerDown),
           ),
+          showEraseDropzone: this.shouldShowDeleteDropzone(),
         },
         callback: ({ atLeastOneVisibleElement, scrollBars }) => {
           if (scrollBars) {
@@ -1458,6 +1472,21 @@ class App extends React.Component<AppProps, AppState> {
       THROTTLE_NEXT_RENDER = true;
     }
   };
+
+  private isTouchDraggingElement = () => {
+    return Boolean(
+      movedAfterTouch &&
+        this.state.draggingElement &&
+        !this.state.selectionElement?.width &&
+        this.state.activeTool.type === "selection" &&
+        !this.state.isResizing &&
+        !this.state.isRotating &&
+        Object.keys(this.state.selectedElementIds).length > 0,
+    );
+  };
+
+  private shouldShowDeleteDropzone = (): boolean =>
+    this.state.canvasSize.mode === "fixed" && this.isTouchDraggingElement();
 
   private onScroll = debounce(() => {
     const { offsetTop, offsetLeft } = this.getCanvasOffsets();
@@ -3248,6 +3277,72 @@ class App extends React.Component<AppProps, AppState> {
     }
   };
 
+  private isPointerOverEraseCircle = (sceneCoords: {
+    x: number;
+    y: number;
+  }) => {
+    if (!this.state.eraseDropzoneElement) {
+      return false;
+    }
+    const { x, y } = sceneCoords;
+    return hitTest(this.state.eraseDropzoneElement!, this.state, x, y);
+  };
+
+  private handleEraseCircleHover = (
+    pointerDownState: PointerDownState,
+    scenePointer: { x: number; y: number },
+  ) => {
+    const hoveringEraseCircle = this.isPointerOverEraseCircle(scenePointer);
+    if (!this.isTouchDraggingElement() && !hoveringEraseCircle) {
+      return;
+    }
+    const idsToUpdate: string[] = [];
+
+    const draggingIds = this.state.selectedElementIds;
+
+    this.scene.getNonDeletedElements().forEach((el) => {
+      if (hoveringEraseCircle) {
+        if (
+          draggingIds[el.id] &&
+          !pointerDownState.elementIdsToErase[el.id]?.erase
+        ) {
+          pointerDownState.elementIdsToErase[el.id] = {
+            erase: true,
+            opacity: el.opacity,
+          };
+          idsToUpdate.push(el.id);
+        }
+      } else {
+        for (const id of Object.keys(pointerDownState.elementIdsToErase)) {
+          if (pointerDownState.elementIdsToErase[id].erase) {
+            pointerDownState.elementIdsToErase[id].erase = false;
+            idsToUpdate.push(id);
+          }
+        }
+      }
+    });
+
+    if (idsToUpdate.length === 0) {
+      return;
+    }
+
+    const elements = this.scene.getElementsIncludingDeleted().map((ele) => {
+      const id =
+        isBoundToContainer(ele) && idsToUpdate.includes(ele.containerId)
+          ? ele.containerId
+          : ele.id;
+      if (idsToUpdate.includes(id) && pointerDownState.elementIdsToErase[id]) {
+        const { erase, opacity } = pointerDownState.elementIdsToErase[id];
+        return newElementWith(ele, {
+          opacity: erase ? ELEMENT_READY_TO_ERASE_OPACITY : opacity,
+        });
+      }
+      return ele;
+    });
+
+    this.scene.replaceAllElements(elements);
+  };
+
   private handleEraser = (
     event: PointerEvent,
     pointerDownState: PointerDownState,
@@ -3337,8 +3432,10 @@ class App extends React.Component<AppProps, AppState> {
     pointerDownState.lastCoords.y = scenePointer.y;
   };
   // set touch moving for mobile context menu
+  // and showing erase dropzone
   private handleTouchMove = (event: React.TouchEvent<HTMLCanvasElement>) => {
     invalidateContextMenu = true;
+    movedAfterTouch = true;
   };
 
   handleHoverSelectedLinearElement(
@@ -3423,6 +3520,7 @@ class App extends React.Component<AppProps, AppState> {
   private handleCanvasPointerDown = (
     event: React.PointerEvent<HTMLCanvasElement>,
   ) => {
+    movedAfterTouch = false;
     // remove any active selection when we start to interact with canvas
     // (mainly, we care about removing selection outside the component which
     //  would prevent our copy handling otherwise)
@@ -4488,19 +4586,12 @@ class App extends React.Component<AppProps, AppState> {
 
       const pointerCoords = viewportCoordsToSceneCoords(event, this.state);
 
-      // if (gesture.pointers.size > 1) {
-      //   pointerCoords = {
-      //     x: gesture.lastCenter!.x / this.state.zoom.value,
-      //     y: gesture.lastCenter!.y / this.state.zoom.value,
-      //   };
-      // } else {
-      //   // return;
-      // }
-
       if (isEraserActive(this.state)) {
         this.handleEraser(event, pointerDownState, pointerCoords);
         return;
       }
+
+      this.handleEraseCircleHover(pointerDownState, pointerCoords);
 
       const [gridX, gridY] = getGridPoint(
         pointerCoords.x,
@@ -5175,6 +5266,21 @@ class App extends React.Component<AppProps, AppState> {
           });
         }
       }
+
+      const sceneCoords = viewportCoordsToSceneCoords(childEvent, this.state);
+      if (
+        this.state.draggingElement &&
+        !this.state.isResizing &&
+        !this.state.isRotating &&
+        Object.keys(this.state.selectedElementIds).length &&
+        this.isPointerOverEraseCircle(sceneCoords) &&
+        this.isTouchDraggingElement()
+      ) {
+        this.deleteElements(Object.keys(this.state.selectedElementIds));
+        this.history.resumeRecording();
+        this.setState({ draggingElement: null });
+      }
+
       if (isEraserActive(this.state)) {
         const draggedDistance = distance2d(
           this.lastPointerDown!.clientX,
@@ -5403,6 +5509,20 @@ class App extends React.Component<AppProps, AppState> {
       return ele;
     });
 
+    this.scene.replaceAllElements(elements);
+  };
+
+  private deleteElements = (ids: string[]) => {
+    const elements = this.scene.getElementsIncludingDeleted().map((ele) => {
+      if (ids.includes(ele.id)) {
+        return newElementWith(ele, { isDeleted: true });
+      } else if (isBoundToContainer(ele) && ids.includes(ele.containerId)) {
+        return newElementWith(ele, { isDeleted: true });
+      }
+      return ele;
+    });
+
+    this.history.resumeRecording();
     this.scene.replaceAllElements(elements);
   };
 

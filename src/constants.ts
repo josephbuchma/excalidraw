@@ -222,3 +222,5 @@ export const COOKIES = {
 /** key containt id of precedeing elemnt id we use in reconciliation during
  * collaboration */
 export const PRECEDING_ELEMENT_KEY = "__precedingElement__";
+
+export const ERASE_CIRCLE_SIZE = 70;

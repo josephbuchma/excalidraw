@@ -99,6 +99,7 @@ export type AppState = {
   isLoading: boolean;
   errorMessage: string | null;
   fixedCanvasFrameElement: NonDeletedExcalidrawElement | null;
+  eraseDropzoneElement: NonDeletedExcalidrawElement | null;
   draggingElement: NonDeletedExcalidrawElement | null;
   resizingElement: NonDeletedExcalidrawElement | null;
   multiElement: NonDeleted<ExcalidrawLinearElement> | null;

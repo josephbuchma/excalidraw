@@ -627,6 +627,10 @@ export const _renderScene = ({
         context.restore();
       }
 
+      if (renderConfig.showEraseDropzone && appState.eraseDropzoneElement) {
+        renderElement(appState.eraseDropzoneElement, rc, context, renderConfig);
+      }
+
       // Reset zoom
       context.restore();
     }

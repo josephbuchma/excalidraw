@@ -31,6 +31,7 @@ export type RenderConfig = {
   canvasSize: CanvasSize;
 
   disableTransformUI?: boolean;
+  showEraseDropzone?: boolean;
 };
 
 export type SceneScroll = {
