@@ -407,7 +407,6 @@ const LayerUI = ({
           appState={appState}
           elements={elements}
           actionManager={actionManager}
-          libraryMenu={libraryMenu}
           renderJSONExportDialog={renderJSONExportDialog}
           renderImageExportDialog={renderImageExportDialog}
           setAppState={setAppState}
