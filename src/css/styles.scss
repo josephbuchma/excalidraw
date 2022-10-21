@@ -1,6 +1,13 @@
 @import "./variables.module";
 @import "./theme";
 
+body {
+  /* To prevent scrolling in PWA
+     https://stackoverflow.com/questions/59193062/how-to-disable-scrolling-on-body-in-ios-13-safari-when-saved-as-pwa-to-the-home
+   */
+  position: fixed;
+}
+
 :root {
   --zIndex-canvas: 1;
   --zIndex-wysiwyg: 2;
