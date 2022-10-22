@@ -5,6 +5,7 @@ import {
   AppState,
   ExcalidrawProps,
   BinaryFiles,
+  AppProps,
 } from "../types";
 
 export type ActionSource = "ui" | "keyboard" | "contextMenu" | "api";
@@ -146,6 +147,7 @@ export interface Action {
   contextItemPredicate?: (
     elements: readonly ExcalidrawElement[],
     appState: AppState,
+    appProps: AppProps,
   ) => boolean;
   checked?: (appState: Readonly<AppState>) => boolean;
   trackEvent:

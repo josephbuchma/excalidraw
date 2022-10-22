@@ -6,6 +6,7 @@ import {
   actionPrevPage,
 } from "../actions";
 import { ActionManager } from "../actions/manager";
+import { isFixedSizePage } from "../element";
 import Scene from "../scene/Scene";
 import { AppState, ExcalidrawProps } from "../types";
 import {
@@ -36,6 +37,8 @@ const Footer = ({
   const device = useDevice();
   const showFinalize =
     !appState.viewModeEnabled && appState.multiElement && device.isTouchScreen;
+  const currentPage = scene.getCurrentPageElement();
+  const zoomActionsEnabled = !(currentPage && isFixedSizePage(currentPage));
   return (
     <footer
       role="contentinfo"
@@ -49,8 +52,7 @@ const Footer = ({
       >
         <Stack.Col gap={2}>
           <Section heading="canvasActions">
-            {(appState.canvasSize.mode !== "fixed" ||
-              !appState.canvasSize.autoZoom) && (
+            {zoomActionsEnabled && (
               <Island padding={1}>
                 <ZoomActions
                   renderAction={actionManager.renderAction}

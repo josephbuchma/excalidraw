@@ -165,6 +165,8 @@ type HitTestArgs = {
 
 const hitTestPointAgainstElement = (args: HitTestArgs): boolean => {
   switch (args.element.type) {
+    case "page":
+      return false;
     case "rectangle":
     case "image":
     case "text":
@@ -191,8 +193,6 @@ const hitTestPointAgainstElement = (args: HitTestArgs): boolean => {
       console.warn(
         "This should not happen, we need to investigate why it does.",
       );
-      return false;
-    case "page":
       return false;
   }
 };

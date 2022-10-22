@@ -1,5 +1,8 @@
 import { t } from "../i18n";
-import { NonDeletedExcalidrawElement } from "../element/types";
+import {
+  ExcalidrawPageElement,
+  NonDeletedExcalidrawElement,
+} from "../element/types";
 import { getSelectedElements } from "../scene";
 
 import "./HintViewer.scss";
@@ -12,12 +15,14 @@ import {
 } from "../element/typeChecks";
 import { getShortcutKey } from "../utils";
 import { isEraserActive } from "../appState";
+import { isFixedSizePage } from "../element";
 
 interface HintViewerProps {
   appState: AppState;
   elements: readonly NonDeletedExcalidrawElement[];
   isMobile: boolean;
   device: Device;
+  currentPage: ExcalidrawPageElement | null;
 }
 
 const getHints = ({
@@ -25,6 +30,7 @@ const getHints = ({
   elements,
   isMobile,
   device,
+  currentPage,
 }: HintViewerProps) => {
   const { activeTool, isResizing, isRotating, lastPointerDownWith } = appState;
   const multiMode = appState.multiElement !== null;
@@ -94,7 +100,7 @@ const getHints = ({
     if (
       !selectedElements.length &&
       !isMobile &&
-      appState.canvasSize.mode !== "fixed"
+      (!currentPage || !isFixedSizePage(currentPage))
     ) {
       return t("hints.canvasPanning");
     }
@@ -122,12 +128,14 @@ export const HintViewer = ({
   elements,
   isMobile,
   device,
+  currentPage,
 }: HintViewerProps) => {
   let hint = getHints({
     appState,
     elements,
     isMobile,
     device,
+    currentPage,
   });
   if (!hint) {
     return null;

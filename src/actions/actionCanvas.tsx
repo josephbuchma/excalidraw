@@ -22,17 +22,18 @@ import { newPageElement } from "../element/newElement";
 
 export const actionChangeViewBackgroundColor = register({
   name: "changeViewBackgroundColor",
+  isCrossPageAction: true,
   trackEvent: false,
-  perform: (_, appState, value: { viewBackgroundColor: string }) => {
+  perform: (elements, appState, value: { viewBackgroundColor: string }) => {
     return {
+      elements: elements.map((el) =>
+        el.id !== appState.currentPageId
+          ? el
+          : newElementWith(el, { backgroundColor: value.viewBackgroundColor }),
+      ),
       appState: {
         ...appState,
         ...value,
-        fixedCanvasFrameElement:
-          appState.fixedCanvasFrameElement &&
-          newElementWith(appState.fixedCanvasFrameElement, {
-            backgroundColor: value.viewBackgroundColor,
-          }),
       },
       commitToHistory: !!value.viewBackgroundColor,
     };
@@ -65,7 +66,11 @@ export const actionClearCanvas = register({
   isCrossPageAction: true,
   perform: (elements, appState, _, app) => {
     app.imageCache.clear();
-    const page = newPageElement();
+    const page = newPageElement({
+      color: appState.viewBackgroundColor,
+      width: app.props.defaultCanvasSize?.width,
+      height: app.props.defaultCanvasSize?.height,
+    });
     return {
       elements: elements
         .map((element) => newElementWith(element, { isDeleted: true }))
@@ -73,8 +78,8 @@ export const actionClearCanvas = register({
       appState: {
         ...getDefaultAppState(),
         currentPageId: app.props.multiPageMode ? page.id : null,
-        scrollX: appState.canvasSize.mode === "fixed" ? appState.scrollX : 0,
-        scrollY: appState.canvasSize.mode === "fixed" ? appState.scrollY : 0,
+        scrollX: app.props.defaultCanvasSize ? appState.scrollX : 0,
+        scrollY: app.props.defaultCanvasSize ? appState.scrollY : 0,
         zoom: appState.zoom,
         files: {},
         theme: appState.theme,

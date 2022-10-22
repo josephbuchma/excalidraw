@@ -32,6 +32,7 @@ const SingleLibraryItem = ({
     (async () => {
       const svg = await exportToSvg({
         elements: libItem.elements,
+        page: null,
         appState: {
           ...appState,
           viewBackgroundColor: oc.white,

@@ -3,7 +3,11 @@ import React from "react";
 import { ActionManager } from "../actions/manager";
 import { LIBRARY_SIDEBAR_WIDTH } from "../constants";
 import { exportCanvas } from "../data";
-import { isTextElement, showSelectedShapeActions } from "../element";
+import {
+  isFixedSizePage,
+  isTextElement,
+  showSelectedShapeActions,
+} from "../element";
 import { NonDeletedExcalidrawElement } from "../element/types";
 import { Language, t } from "../i18n";
 import { calculateScrollCenter } from "../scene";
@@ -105,6 +109,7 @@ const LayerUI = ({
   scene,
 }: LayerUIProps) => {
   const device = useDevice();
+  const currentPage = scene.getCurrentPageElement();
 
   const renderJSONExportDialog = () => {
     if (!UIOptions.canvasActions.export) {
@@ -135,6 +140,7 @@ const LayerUI = ({
         const fileHandle = await exportCanvas(
           type,
           exportedElements,
+          scene.getCurrentPageElement(),
           appState,
           files,
           {
@@ -161,13 +167,16 @@ const LayerUI = ({
     return (
       <ImageExportDialog
         elements={elements}
+        page={scene.getCurrentPageElement()}
         appState={appState}
         files={files}
         actionManager={actionManager}
         onExportToPng={createExporter("png")}
         onExportToSvg={createExporter("svg")}
         onExportToClipboard={createExporter("clipboard")}
-        exportPadding={appState.canvasSize.mode === "fixed" ? 0 : undefined}
+        exportPadding={
+          currentPage && isFixedSizePage(currentPage) ? 0 : undefined
+        }
       />
     );
   };
@@ -307,6 +316,7 @@ const LayerUI = ({
                         elements={elements}
                         isMobile={device.isMobile}
                         device={device}
+                        currentPage={currentPage}
                       />
                       {heading}
                       <Stack.Row gap={1}>
@@ -425,6 +435,7 @@ const LayerUI = ({
         <MobileMenu
           appState={appState}
           elements={elements}
+          currentPage={currentPage}
           actionManager={actionManager}
           renderJSONExportDialog={renderJSONExportDialog}
           renderImageExportDialog={renderImageExportDialog}

@@ -10,6 +10,7 @@ import {
   NonDeleted,
   GroupId,
   ExcalidrawBindableElement,
+  ExcalidrawPageElement,
 } from "../element/types";
 import {
   getElementAbsoluteCoords,
@@ -18,6 +19,7 @@ import {
   getTransformHandles,
   getElementBounds,
   getCommonBounds,
+  isFixedSizePage,
 } from "../element";
 
 import { roundRect } from "./roundRect";
@@ -316,6 +318,7 @@ const renderLinearElementPointHighlight = (
 
 export const _renderScene = ({
   elements,
+  page,
   appState,
   scale,
   rc,
@@ -323,6 +326,7 @@ export const _renderScene = ({
   renderConfig,
 }: {
   elements: readonly NonDeletedExcalidrawElement[];
+  page: ExcalidrawPageElement | null;
   appState: AppState;
   scale: number;
   rc: RoughCanvas;
@@ -355,10 +359,7 @@ export const _renderScene = ({
       context.filter = THEME_FILTER;
     }
 
-    const isFixedCanvasMode =
-      appState.canvasSize.mode === "fixed" &&
-      appState.fixedCanvasFrameElement &&
-      !isExporting;
+    const isFixedCanvasMode = page && isFixedSizePage(page) && !isExporting;
 
     // Paint background
     if (typeof renderConfig.viewBackgroundColor === "string") {
@@ -384,12 +385,12 @@ export const _renderScene = ({
     context.save();
     context.scale(renderConfig.zoom.value, renderConfig.zoom.value);
 
-    if (appState.canvasSize.mode === "fixed") {
+    if (isFixedCanvasMode && page) {
       try {
-        const { width, height } = appState.canvasSize!;
+        const { width, height } = page;
         context.rect(appState.scrollX, appState.scrollY, width, height);
         context.clip();
-        renderElement(appState.fixedCanvasFrameElement!, rc, context, {
+        renderElement(page, rc, context, {
           ...renderConfig,
         });
       } catch (error: any) {
@@ -783,6 +784,7 @@ export const _renderScene = ({
 const renderSceneThrottled = throttleRAF(
   (config: {
     elements: readonly NonDeletedExcalidrawElement[];
+    page: ExcalidrawPageElement | null;
     appState: AppState;
     scale: number;
     rc: RoughCanvas;
@@ -800,6 +802,7 @@ const renderSceneThrottled = throttleRAF(
 export const renderScene = <T extends boolean = false>(
   config: {
     elements: readonly NonDeletedExcalidrawElement[];
+    page: ExcalidrawPageElement | null;
     appState: AppState;
     scale: number;
     rc: RoughCanvas;
@@ -1093,6 +1096,7 @@ const isVisibleElement = (
 // This should be only called for exporting purposes
 export const renderSceneToSvg = (
   elements: readonly NonDeletedExcalidrawElement[],
+  page: ExcalidrawPageElement | null,
   rsvg: RoughSVG,
   svgRoot: SVGElement,
   files: BinaryFiles,

@@ -52,11 +52,6 @@ export const calculateScrollCenter = (
   canvas: HTMLCanvasElement | null,
 ): { scrollX: number; scrollY: number } => {
   elements = getVisibleElements(elements);
-
-  if (appState.fixedCanvasFrameElement) {
-    elements = [...elements, appState.fixedCanvasFrameElement];
-  }
-
   if (!elements.length) {
     return {
       scrollX: 0,

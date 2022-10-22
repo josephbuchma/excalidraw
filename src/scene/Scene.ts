@@ -4,6 +4,7 @@ import {
   ExcalidrawPageElements,
   ExcalidrawDocumentElements,
   NonDeletedExcalidrawDocumentElements,
+  ExcalidrawPageElement,
 } from "../element/types";
 import {
   getNonDeletedElements,
@@ -61,6 +62,7 @@ class Scene {
   // ---------------------------------------------------------------------------
 
   private currentPageId: () => string | null = () => null;
+  private currentPageElement?: ExcalidrawPageElement | null = null;
   private callbacks: Set<SceneStateCallback> = new Set();
 
   private nonDeletedElements: NonDeletedExcalidrawDocumentElements = [];
@@ -68,12 +70,28 @@ class Scene {
   private elementsMap = new Map<ExcalidrawElement["id"], ExcalidrawElement>();
   private pages: readonly string[] = [];
 
+  getCurrentPageElement(): ExcalidrawPageElement | null {
+    return (
+      (this.elements.find(
+        (el) => el.id === this.currentPageId(),
+      ) as ExcalidrawPageElement) || null
+    );
+  }
+
   getElementsIncludingDeleted(): ExcalidrawPageElements {
     return getElementsOnPage(this.currentPageId(), this.elements);
   }
 
   getDocumentElementsIncludingDeleted(): ExcalidrawDocumentElements {
     return this.elements;
+  }
+
+  getNonDeletedElementsIncludingPageElement(): NonDeletedExcalidrawDocumentElements {
+    return getElementsOnPage(
+      this.currentPageId(),
+      this.nonDeletedElements,
+      true,
+    );
   }
 
   getNonDeletedElements(): NonDeletedExcalidrawDocumentElements {
@@ -118,6 +136,9 @@ class Scene {
 
     if (!pageId || opts.allPages) {
       this.elements = nextElements;
+      this.currentPageElement = nextElements.find(
+        (el) => el.type === "page" && el.id === pageId,
+      ) as ExcalidrawPageElement | undefined;
     } else {
       this.elements = replaceElementsOnPage(
         pageId,

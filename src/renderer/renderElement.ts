@@ -198,13 +198,17 @@ const drawElementOnCanvas = (
   context.globalAlpha = element.opacity / 100;
   switch (element.type) {
     case "page":
-      return;
     case "rectangle":
     case "diamond":
     case "ellipse": {
       context.lineJoin = "round";
       context.lineCap = "round";
-      rc.draw(getShapeForElement(element)!);
+      const shape = getShapeForElement(element);
+      if (!shape) {
+        console.error("Could not find shape for element", element);
+      } else {
+        rc.draw(shape);
+      }
       break;
     }
     case "arrow":
@@ -367,7 +371,6 @@ export const generateRoughOptions = (
 
   switch (element.type) {
     case "page":
-      throw new Error(`Should not render ${element.type}`);
     case "rectangle":
     case "diamond":
     case "ellipse": {
@@ -394,10 +397,9 @@ export const generateRoughOptions = (
     }
     case "arrow":
       return options;
-    default: {
-      throw new Error(`Unimplemented type ${element.type}`);
-    }
   }
+
+  throw new Error(`Unimplemented type ${element.type}`);
 };
 
 /**
@@ -417,6 +419,7 @@ const generateElementShape = (
     elementWithCanvasCache.delete(element);
 
     switch (element.type) {
+      case "page":
       case "rectangle":
         if (element.strokeSharpness === "round") {
           const w = element.width;
@@ -741,8 +744,6 @@ export const renderElement = (
 ) => {
   const generator = rc.generator;
   switch (element.type) {
-    case "page":
-      return;
     case "selection": {
       context.save();
       context.translate(
@@ -779,6 +780,7 @@ export const renderElement = (
 
       break;
     }
+    case "page":
     case "rectangle":
     case "diamond":
     case "ellipse":
@@ -868,13 +870,12 @@ export const renderElementToSvg = (
   }
 
   switch (element.type) {
-    case "page":
-      return;
     case "selection": {
       // Since this is used only during editing experience, which is canvas based,
       // this should not happen
       throw new Error("Selection rendering is not supported for SVG");
     }
+    case "page":
     case "rectangle":
     case "diamond":
     case "ellipse": {

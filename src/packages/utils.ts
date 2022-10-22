@@ -4,7 +4,11 @@ import {
 } from "../scene/export";
 import { getDefaultAppState } from "../appState";
 import { AppState, BinaryFiles } from "../types";
-import { ExcalidrawElement, NonDeleted } from "../element/types";
+import {
+  ExcalidrawElement,
+  ExcalidrawPageElement,
+  NonDeleted,
+} from "../element/types";
 import { getNonDeletedElements } from "../element";
 import { restore } from "../data/restore";
 import { MIME_TYPES } from "../constants";
@@ -20,6 +24,7 @@ export { MIME_TYPES };
 
 type ExportOpts = {
   elements: readonly NonDeleted<ExcalidrawElement>[];
+  page: ExcalidrawPageElement | null;
   appState?: Partial<Omit<AppState, "offsetTop" | "offsetLeft">>;
   files: BinaryFiles | null;
   maxWidthOrHeight?: number;
@@ -31,6 +36,7 @@ type ExportOpts = {
 
 export const exportToCanvas = ({
   elements,
+  page,
   appState,
   files,
   maxWidthOrHeight,
@@ -47,6 +53,7 @@ export const exportToCanvas = ({
   const { exportBackground, viewBackgroundColor } = restoredAppState;
   return _exportToCanvas(
     getNonDeletedElements(restoredElements),
+    null,
     { ...restoredAppState, offsetTop: 0, offsetLeft: 0, width: 0, height: 0 },
     files || {},
     { exportBackground, exportPadding, viewBackgroundColor },
@@ -149,6 +156,7 @@ export const exportToBlob = async (
 
 export const exportToSvg = async ({
   elements,
+  page,
   appState = getDefaultAppState(),
   files = {},
   exportPadding,
@@ -162,10 +170,10 @@ export const exportToSvg = async ({
   );
   return _exportToSvg(
     getNonDeletedElements(restoredElements),
+    page,
     {
       ...restoredAppState,
       exportPadding,
-      canvasSize: appState.canvasSize || { mode: "infinite" },
     },
     files,
   );

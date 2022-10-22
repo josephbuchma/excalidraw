@@ -108,6 +108,7 @@ import {
   deletePage,
   findSubstituteForDeletedPage,
   addPage,
+  isFixedSizePage,
 } from "../element";
 import {
   bindOrUnbindLinearElement,
@@ -167,7 +168,7 @@ import {
   isSelectedViaGroup,
   selectGroupsForSelectedElements,
 } from "../groups";
-import { adjustAppStateForCanvasSize } from "../canvas-size";
+import { maybeAutozoomFixedCanvas } from "../canvas-size";
 import History from "../history";
 import { defaultLang, getLanguage, languages, setLanguage, t } from "../i18n";
 import {
@@ -393,23 +394,20 @@ class App extends React.Component<AppProps, AppState> {
       defaultCanvasSize,
     } = props;
 
-    this.state = adjustAppStateForCanvasSize(
-      {
-        ...defaultAppState,
-        theme,
-        isLoading: true,
-        ...this.getCanvasOffsets(),
-        viewModeEnabled,
-        zenModeEnabled,
-        gridSize: gridModeEnabled ? GRID_SIZE : null,
-        name,
-        width: window.innerWidth,
-        height: window.innerHeight,
-        showHyperlinkPopup: false,
-        isSidebarDocked: false,
-      },
-      defaultCanvasSize,
-    );
+    this.state = {
+      ...defaultAppState,
+      theme,
+      isLoading: true,
+      ...this.getCanvasOffsets(),
+      viewModeEnabled,
+      zenModeEnabled,
+      gridSize: gridModeEnabled ? GRID_SIZE : null,
+      name,
+      width: window.innerWidth,
+      height: window.innerHeight,
+      showHyperlinkPopup: false,
+      isSidebarDocked: false,
+    };
 
     this.id = nanoid();
 
@@ -468,6 +466,17 @@ class App extends React.Component<AppProps, AppState> {
 
     this.actionManager.registerAction(createUndoAction(this.history));
     this.actionManager.registerAction(createRedoAction(this.history));
+
+    if (defaultCanvasSize) {
+      const { width, height } = defaultCanvasSize;
+      this.scene.replaceAllDocumentElements([
+        newPageElement({
+          width,
+          height,
+          color: this.state.viewBackgroundColor,
+        }),
+      ]);
+    }
   }
 
   private renderCanvas() {
@@ -525,6 +534,11 @@ class App extends React.Component<AppProps, AppState> {
     );
   }
 
+  private isCurrentPageFixedSize = (): boolean => {
+    const cp = this.scene.getCurrentPageElement();
+    return Boolean(cp && isFixedSizePage(cp));
+  };
+
   public render() {
     const selectedElement = getSelectedElements(
       this.scene.getNonDeletedElements(),
@@ -542,8 +556,7 @@ class App extends React.Component<AppProps, AppState> {
         className={clsx("excalidraw excalidraw-container", {
           "excalidraw--view-mode": this.state.viewModeEnabled,
           "excalidraw--mobile": this.device.isMobile,
-          "excalidraw--fixed-size-canvas":
-            this.state.canvasSize.mode === "fixed",
+          "excalidraw--fixed-size-canvas": this.isCurrentPageFixedSize(),
         })}
         ref={this.excalidrawContainerRef}
         onDrop={this.handleAppOnDrop}
@@ -656,7 +669,7 @@ class App extends React.Component<AppProps, AppState> {
       return;
     }
     this.history.resumeRecording();
-    const newPage = newPageElement();
+    const newPage = this.newPageElement();
     const updatedElements = addPage(
       newPage,
       currentPageId,
@@ -760,24 +773,17 @@ class App extends React.Component<AppProps, AppState> {
           name = this.props.name;
         }
         this.setState(
-          (state) => {
-            return adjustAppStateForCanvasSize(
-              {
-                ...state,
-                ...actionResult.appState,
-                editingElement:
-                  editingElement ||
-                  actionResult.appState?.editingElement ||
-                  null,
-                viewModeEnabled,
-                zenModeEnabled,
-                gridSize,
-                theme,
-                name,
-              },
-              this.props.defaultCanvasSize,
-            );
-          },
+          (state) => ({
+            ...state,
+            ...actionResult.appState,
+            editingElement:
+              editingElement || actionResult.appState?.editingElement || null,
+            viewModeEnabled,
+            zenModeEnabled,
+            gridSize,
+            theme,
+            name,
+          }),
           () => {
             if (actionResult.syncHistory) {
               this.history.setCurrentState(
@@ -819,22 +825,27 @@ class App extends React.Component<AppProps, AppState> {
     this.history.clear();
   };
 
+  private newPageElement = () => {
+    const { width, height } = this.props.defaultCanvasSize || {};
+    return newPageElement({
+      color: this.state.viewBackgroundColor,
+      width,
+      height,
+    });
+  };
+
   /**
    * Resets scene & history.
    * ! Do not use to clear scene user action !
    */
   private resetScene = withBatchedUpdates(
     (opts?: { resetLoadingState: boolean }) => {
-      const firstPage = newPageElement();
+      const firstPage = this.newPageElement();
       this.scene.replaceAllDocumentElements(
         this.props.multiPageMode ? [firstPage] : [],
       );
       this.setState((state) => ({
         ...getDefaultAppState(),
-        canvasSize: this.props.defaultCanvasSize
-          ? { mode: "fixed", ...this.props.defaultCanvasSize }
-          : { mode: "infinite" },
-        documentMode: this.props.multiPageMode ? "multi-page" : "single-page",
         currentPageId: this.props.multiPageMode ? firstPage.id : null,
         isLoading: opts?.resetLoadingState ? false : state.isLoading,
         theme: this.state.theme,
@@ -893,12 +904,6 @@ class App extends React.Component<AppProps, AppState> {
     const scene = restore(initialData, null, null);
     scene.appState = {
       ...scene.appState,
-      documentMode:
-        scene.appState.documentMode && scene.appState.documentMode !== "default"
-          ? scene.appState.documentMode
-          : this.props.multiPageMode
-          ? "multi-page"
-          : "single-page",
       theme: this.props.theme || scene.appState.theme,
       // we're falling back to current (pre-init) state when deciding
       // whether to open the library, to handle a case where we
@@ -913,12 +918,10 @@ class App extends React.Component<AppProps, AppState> {
       toast: this.state.toast,
     };
 
-    if (scene.appState.documentMode === "multi-page") {
-      if (scene.elements[0]?.type !== "page") {
-        scene.elements = [newPageElement(), ...scene.elements];
-      }
-      scene.appState.currentPageId = scene.elements[0].id;
+    if (this.props.multiPageMode && scene.elements[0]?.type !== "page") {
+      scene.elements = [this.newPageElement(), ...scene.elements];
     }
+    scene.appState.currentPageId = scene.elements[0].id;
 
     if (initialData?.scrollToContent) {
       scene.appState = {
@@ -1351,10 +1354,20 @@ class App extends React.Component<AppProps, AppState> {
       });
     }
 
-    maybeUpdateEraseDropzoneElement(
-      prevState,
+    const page = this.scene.getCurrentPageElement();
+
+    if (this.state.zoom !== prevState.zoom) {
+      maybeUpdateEraseDropzoneElement(
+        this.state,
+        page,
+        this.setState.bind(this),
+      );
+    }
+    maybeAutozoomFixedCanvas(
       this.state,
+      page,
       this.setState.bind(this),
+      this.props.defaultCanvasSize,
     );
   }
 
@@ -1423,6 +1436,7 @@ class App extends React.Component<AppProps, AppState> {
     renderScene(
       {
         elements: renderingElements,
+        page: this.scene.getCurrentPageElement(),
         appState: this.state,
         scale: window.devicePixelRatio,
         rc: this.rc!,
@@ -1442,7 +1456,6 @@ class App extends React.Component<AppProps, AppState> {
           imageCache: this.imageCache,
           isExporting: false,
           renderScrollbars: !this.device.isMobile,
-          canvasSize: this.state.canvasSize,
           disableTransformUI: Boolean(
             this.lastPointerDown &&
               this.shouldDisableTransformUI(this.lastPointerDown),
@@ -1486,7 +1499,7 @@ class App extends React.Component<AppProps, AppState> {
   };
 
   private shouldShowDeleteDropzone = (): boolean =>
-    this.state.canvasSize.mode === "fixed" && this.isTouchDraggingElement();
+    this.isCurrentPageFixedSize() && this.isTouchDraggingElement();
 
   private onScroll = debounce(() => {
     const { offsetTop, offsetLeft } = this.getCanvasOffsets();
@@ -2682,7 +2695,7 @@ class App extends React.Component<AppProps, AppState> {
     event: React.MouseEvent<HTMLCanvasElement>,
   ) => {
     if (
-      this.state.canvasSize.mode === "fixed" &&
+      this.isCurrentPageFixedSize() &&
       this.isPointerOutsideCanvas(
         viewportCoordsToSceneCoords(event, this.state),
       )
@@ -3992,14 +4005,9 @@ class App extends React.Component<AppProps, AppState> {
   };
 
   private isPointerOutsideCanvas({ x, y }: { x: number; y: number }): boolean {
-    if (this.state.canvasSize.mode !== "fixed") {
-      return false;
-    }
-    return (
-      x < 0 ||
-      x > this.state.canvasSize.width ||
-      y < 0 ||
-      y > this.state.canvasSize.height
+    const { width, height } = this.scene.getCurrentPageElement() || {};
+    return Boolean(
+      width && height && (x < 0 || x > width || y < 0 || y > height),
     );
   }
 
@@ -6513,8 +6521,9 @@ class App extends React.Component<AppProps, AppState> {
   };
 
   private shouldPreventPanOrZoom(): boolean {
-    const { canvasSize: cs } = this.state;
-    return cs.mode === "fixed" && !!cs.autoZoom;
+    return Boolean(
+      this.isCurrentPageFixedSize() && this.props.defaultCanvasSize?.autoZoom,
+    );
   }
 
   private handleWheel = withBatchedUpdates((event: WheelEvent) => {
@@ -6663,16 +6672,13 @@ class App extends React.Component<AppProps, AppState> {
       }
 
       this.setState(
-        adjustAppStateForCanvasSize(
-          {
-            ...this.state,
-            width,
-            height,
-            offsetLeft,
-            offsetTop,
-          },
-          this.props.defaultCanvasSize,
-        ),
+        {
+          ...this.state,
+          width,
+          height,
+          offsetLeft,
+          offsetTop,
+        },
         () => {
           cb && cb();
         },

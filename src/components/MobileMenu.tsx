@@ -4,7 +4,10 @@ import { ActionManager } from "../actions/manager";
 import { t } from "../i18n";
 import Stack from "./Stack";
 import { showSelectedShapeActions } from "../element";
-import { NonDeletedExcalidrawElement } from "../element/types";
+import {
+  ExcalidrawPageElement,
+  NonDeletedExcalidrawElement,
+} from "../element/types";
 import { FixedSideContainer } from "./FixedSideContainer";
 import { Island } from "./Island";
 import { HintViewer } from "./HintViewer";
@@ -28,6 +31,7 @@ type MobileMenuProps = {
   renderImageExportDialog: () => React.ReactNode;
   setAppState: React.Component<any, AppState>["setState"];
   elements: readonly NonDeletedExcalidrawElement[];
+  currentPage: ExcalidrawPageElement | null;
   onCollabButtonClick?: () => void;
   onLockToggle: () => void;
   onPenModeToggle: () => void;
@@ -50,6 +54,7 @@ type MobileMenuProps = {
 export const MobileMenu = ({
   appState,
   elements,
+  currentPage,
   actionManager,
   renderJSONExportDialog,
   renderImageExportDialog,
@@ -117,6 +122,7 @@ export const MobileMenu = ({
           elements={elements}
           isMobile={true}
           device={device}
+          currentPage={currentPage}
         />
       </FixedSideContainer>
     );

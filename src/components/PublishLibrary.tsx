@@ -87,6 +87,7 @@ const generatePreviewImage = async (libraryItems: LibraryItems) => {
   for (const [index, item] of libraryItems.entries()) {
     const itemCanvas = await exportToCanvas({
       elements: item.elements,
+      page: null,
       files: null,
       maxWidthOrHeight: BOX_SIZE,
     });

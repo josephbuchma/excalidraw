@@ -281,6 +281,7 @@ export default function App() {
     }
     await exportToClipboard({
       elements: excalidrawAPI.getSceneElements(),
+      page: null,
       appState: excalidrawAPI.getAppState(),
       files: excalidrawAPI.getFiles(),
       type,
@@ -739,6 +740,7 @@ export default function App() {
               }
               const svg = await exportToSvg({
                 elements: excalidrawAPI?.getSceneElements(),
+                page: null,
                 appState: {
                   ...initialData.appState,
                   exportWithDarkMode,
@@ -763,6 +765,7 @@ export default function App() {
               }
               const blob = await exportToBlob({
                 elements: excalidrawAPI?.getSceneElements(),
+                page: null,
                 mimeType: "image/png",
                 appState: {
                   ...initialData.appState,
@@ -787,6 +790,7 @@ export default function App() {
               }
               const canvas = await exportToCanvas({
                 elements: excalidrawAPI.getSceneElements(),
+                page: null,
                 appState: {
                   ...initialData.appState,
                   exportWithDarkMode,

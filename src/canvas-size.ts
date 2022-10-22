@@ -1,30 +1,25 @@
-import { newElement } from "./element";
-import { newElementWith } from "./element/mutateElement";
+import { ExcalidrawPageElement } from "./element/types";
 import { getNormalizedZoom } from "./scene";
-import { AppProps, AppState, CanvasSize } from "./types";
+import { AppProps, AppState } from "./types";
 
-export function adjustAppStateForCanvasSize(
+export function maybeAutozoomFixedCanvas(
   state: AppState,
+  currentPageElem: ExcalidrawPageElement | null,
+  setState: (state: AppState) => void,
   defaultCanvasSize?: AppProps["defaultCanvasSize"],
-): AppState {
-  if (state.canvasSize.mode === "infinite") {
-    return state;
+) {
+  if (!currentPageElem || !defaultCanvasSize) {
+    return;
   }
-  const { viewBackgroundColor } = state;
-  const canvasSize: CanvasSize =
-    state.canvasSize.mode !== "default"
-      ? state.canvasSize
-      : defaultCanvasSize
-      ? { mode: "fixed", ...defaultCanvasSize }
-      : { mode: "infinite" };
 
-  if (canvasSize.mode !== "fixed") {
-    return { ...state, canvasSize };
-  }
+  let { width: srcw, height: srch } = currentPageElem || defaultCanvasSize;
+  const autoZoom = defaultCanvasSize?.autoZoom;
+
   const { width: dstw, height: dsth } = state;
-  let { width: srcw, height: srch, autoZoom } = canvasSize;
   const scale = Math.min(dstw / srcw, dsth / srch);
+
   [srcw, srch] = [srcw, srch].map((v) => v * scale);
+
   const scroll = autoZoom
     ? {
         scrollX: dstw > srcw ? (dstw - srcw) / 2 / scale : 0,
@@ -34,31 +29,14 @@ export function adjustAppStateForCanvasSize(
         },
       }
     : {};
-  return {
-    ...state,
-    canvasSize,
-    ...scroll,
-    fixedCanvasFrameElement: state.fixedCanvasFrameElement
-      ? newElementWith(state.fixedCanvasFrameElement, {
-          width: canvasSize.width,
-          height: canvasSize.height,
-          backgroundColor: viewBackgroundColor,
-        })
-      : newElement({
-          type: "rectangle",
-          x: 0,
-          y: 0,
-          strokeColor: "#00000005",
-          backgroundColor: viewBackgroundColor,
-          fillStyle: "solid",
-          strokeWidth: 1,
-          strokeStyle: "solid",
-          roughness: 0,
-          opacity: 100,
-          strokeSharpness: "sharp",
-          locked: true,
-          width: canvasSize.width,
-          height: canvasSize.height,
-        }),
-  };
+  if (
+    scroll.scrollX !== state.scrollX ||
+    scroll.scrollY !== state.scrollY ||
+    scroll.zoom.value !== state.zoom.value
+  ) {
+    setState({
+      ...state,
+      ...scroll,
+    });
+  }
 }

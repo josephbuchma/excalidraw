@@ -380,7 +380,7 @@ export const restore = (
   const elems = restoreElements(data?.elements, localElements);
   const appState = restoreAppState(data?.appState, localAppState || null);
   const firstPage = elems.find((el) => el.type === "page" && !el.isDeleted);
-  if (appState.documentMode === "multi-page" && firstPage) {
+  if (firstPage) {
     appState.currentPageId = firstPage.id;
   }
   return {

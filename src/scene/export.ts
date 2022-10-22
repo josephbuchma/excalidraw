@@ -1,9 +1,12 @@
 import rough from "roughjs/bin/rough";
-import { NonDeletedExcalidrawElement } from "../element/types";
+import {
+  ExcalidrawPageElement,
+  NonDeletedExcalidrawElement,
+} from "../element/types";
 import { getCommonBounds } from "../element/bounds";
 import { renderScene, renderSceneToSvg } from "../renderer/renderScene";
 import { distance } from "../utils";
-import { AppState, BinaryFiles, CanvasSize } from "../types";
+import { AppState, BinaryFiles } from "../types";
 import { DEFAULT_EXPORT_PADDING, SVG_NS, THEME_FILTER } from "../constants";
 import { getDefaultAppState } from "../appState";
 import { serializeAsJSON } from "../data/json";
@@ -16,6 +19,7 @@ export const SVG_EXPORT_TAG = `<!-- svg-source:excalidraw -->`;
 
 export const exportToCanvas = async (
   elements: readonly NonDeletedExcalidrawElement[],
+  page: ExcalidrawPageElement | null,
   appState: AppState,
   files: BinaryFiles,
   {
@@ -39,8 +43,8 @@ export const exportToCanvas = async (
 ) => {
   const [minX, minY, width, height] = getCanvasSize(
     elements,
+    page,
     exportPadding,
-    appState,
   );
 
   const { canvas, scale = 1 } = createCanvas(width, height);
@@ -57,6 +61,7 @@ export const exportToCanvas = async (
 
   renderScene({
     elements,
+    page: null,
     appState,
     scale,
     rc: rough.canvas(canvas),
@@ -77,7 +82,6 @@ export const exportToCanvas = async (
       renderSelection: false,
       renderGrid: false,
       isExporting: true,
-      canvasSize: appState.canvasSize,
     },
   });
 
@@ -86,8 +90,8 @@ export const exportToCanvas = async (
 
 export const exportToSvg = async (
   elements: readonly NonDeletedExcalidrawElement[],
+  page: ExcalidrawPageElement | null,
   appState: {
-    canvasSize: CanvasSize;
     exportBackground: boolean;
     exportPadding?: number;
     exportScale?: number;
@@ -117,8 +121,8 @@ export const exportToSvg = async (
   }
   const [minX, minY, width, height] = getCanvasSize(
     elements,
+    page,
     exportPadding,
-    appState,
   );
 
   // initialize SVG root
@@ -173,7 +177,7 @@ export const exportToSvg = async (
   }
 
   const rsvg = rough.svg(svgRoot);
-  renderSceneToSvg(elements, rsvg, svgRoot, files || {}, {
+  renderSceneToSvg(elements, page, rsvg, svgRoot, files || {}, {
     offsetX: -minX + exportPadding,
     offsetY: -minY + exportPadding,
     exportWithDarkMode: appState.exportWithDarkMode,
@@ -185,12 +189,11 @@ export const exportToSvg = async (
 // calculate smallest area to fit the contents in
 const getCanvasSize = (
   elements: readonly NonDeletedExcalidrawElement[],
+  page: ExcalidrawPageElement | null,
   exportPadding: number,
-  appState: { canvasSize: CanvasSize },
 ): [number, number, number, number] => {
-  if (appState.canvasSize.mode === "fixed") {
-    const { width, height } = appState.canvasSize;
-    return [0, 0, width, height];
+  if (page) {
+    return [0, 0, page.width, page.height];
   }
 
   const [minX, minY, maxX, maxY] = getCommonBounds(elements);
@@ -202,15 +205,12 @@ const getCanvasSize = (
 
 export const getExportSize = (
   elements: readonly NonDeletedExcalidrawElement[],
+  page: ExcalidrawPageElement | null,
   exportPadding: number,
   scale: number,
-  appState: { canvasSize: CanvasSize },
 ): [number, number] => {
-  const [, , width, height] = getCanvasSize(
-    elements,
-    exportPadding,
-    appState,
-  ).map((dimension) => Math.trunc(dimension * scale));
-
+  const [, , width, height] = getCanvasSize(elements, page, exportPadding).map(
+    (dimension) => Math.trunc(dimension * scale),
+  );
   return [width, height];
 };

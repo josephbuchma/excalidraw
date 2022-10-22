@@ -59,6 +59,7 @@ export const actionCopyAsSvg = register({
         selectedElements.length
           ? selectedElements
           : getNonDeletedElements(elements),
+        selectedElements.length ? null : app.scene.getCurrentPageElement(),
         appState,
         app.files,
         appState,
@@ -100,6 +101,7 @@ export const actionCopyAsPng = register({
         selectedElements.length
           ? selectedElements
           : getNonDeletedElements(elements),
+        selectedElements.length ? null : app.scene.getCurrentPageElement(),
         appState,
         app.files,
         appState,

@@ -59,9 +59,9 @@ registerFont("./public/Cascadia.woff2", { family: "Cascadia" });
 
 const canvas = exportToCanvas(
   elements as any,
+  null,
   {
     ...getDefaultAppState(),
-    canvasSize: { mode: "infinite" },
     offsetTop: 0,
     offsetLeft: 0,
     width: 0,

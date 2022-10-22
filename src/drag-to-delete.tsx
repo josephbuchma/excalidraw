@@ -1,18 +1,25 @@
 import { ERASE_CIRCLE_SIZE } from "./constants";
-import { newImageElement } from "./element";
-import { FileId, NonDeletedExcalidrawElement } from "./element/types";
+import { isFixedSizePage, newImageElement } from "./element";
+import {
+  ExcalidrawPageElement,
+  FileId,
+  NonDeletedExcalidrawElement,
+} from "./element/types";
 import { AppClassProperties, AppState } from "./types";
 
 export const newEraseDropzoneElement = (
-  canvasSize: AppState["canvasSize"],
+  currentPage: ExcalidrawPageElement | null,
 ): NonDeletedExcalidrawElement | null => {
-  if (canvasSize.mode !== "fixed") {
+  if (!currentPage) {
+    return null;
+  }
+  if (!isFixedSizePage(currentPage)) {
     return null;
   }
   return newImageElement({
     type: "image",
-    x: canvasSize.width / 2 - ERASE_CIRCLE_SIZE / 2,
-    y: canvasSize.height - ERASE_CIRCLE_SIZE * 1.1,
+    x: currentPage.width / 2 - ERASE_CIRCLE_SIZE / 2,
+    y: currentPage.height - ERASE_CIRCLE_SIZE * 1.1,
     strokeColor: "red",
     backgroundColor: "rgba(255,0,0,0.01)",
     fillStyle: "solid",
@@ -29,16 +36,20 @@ export const newEraseDropzoneElement = (
 };
 
 export const maybeUpdateEraseDropzoneElement = (
-  oldState: AppState,
-  newState: AppState,
+  state: AppState,
+  currentPage: ExcalidrawPageElement | null,
   setState: (state: AppState) => void,
 ) => {
-  if (oldState.canvasSize === newState.canvasSize) {
+  if (!currentPage || !isFixedSizePage(currentPage)) {
+    return;
+  }
+  const { width, height } = currentPage;
+  if (width === state.width && height === state.height) {
     return;
   }
   setState({
-    ...newState,
-    eraseDropzoneElement: newEraseDropzoneElement(newState.canvasSize),
+    ...state,
+    eraseDropzoneElement: newEraseDropzoneElement(currentPage),
   });
 };
 

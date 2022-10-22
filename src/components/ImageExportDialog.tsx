@@ -2,7 +2,10 @@ import React, { useEffect, useRef, useState } from "react";
 import { render, unmountComponentAtNode } from "react-dom";
 import { probablySupportsClipboardBlob } from "../clipboard";
 import { canvasToBlob } from "../data/blob";
-import { NonDeletedExcalidrawElement } from "../element/types";
+import {
+  ExcalidrawPageElement,
+  NonDeletedExcalidrawElement,
+} from "../element/types";
 import { CanvasError } from "../errors";
 import { t } from "../i18n";
 import { useDevice } from "./App";
@@ -79,6 +82,7 @@ const ExportButton: React.FC<{
 
 const ImageExportModal = ({
   elements,
+  page,
   appState,
   files,
   exportPadding = DEFAULT_EXPORT_PADDING,
@@ -88,6 +92,7 @@ const ImageExportModal = ({
   onExportToClipboard,
 }: {
   appState: AppState;
+  page: ExcalidrawPageElement | null;
   elements: readonly NonDeletedExcalidrawElement[];
   files: BinaryFiles;
   exportPadding?: number;
@@ -115,7 +120,7 @@ const ImageExportModal = ({
     if (!previewNode) {
       return;
     }
-    exportToCanvas(exportedElements, appState, files, {
+    exportToCanvas(exportedElements, page, appState, files, {
       exportBackground,
       viewBackgroundColor,
       exportPadding,
@@ -133,6 +138,7 @@ const ImageExportModal = ({
       });
   }, [
     appState,
+    page,
     files,
     exportedElements,
     exportBackground,
@@ -220,6 +226,7 @@ const ImageExportModal = ({
 
 export const ImageExportDialog = ({
   elements,
+  page,
   appState,
   files,
   exportPadding = DEFAULT_EXPORT_PADDING,
@@ -230,6 +237,7 @@ export const ImageExportDialog = ({
 }: {
   appState: AppState;
   elements: readonly NonDeletedExcalidrawElement[];
+  page: ExcalidrawPageElement | null;
   files: BinaryFiles;
   exportPadding?: number;
   actionManager: ActionManager;
@@ -260,6 +268,7 @@ export const ImageExportDialog = ({
         <Dialog onCloseRequest={handleClose} title={t("buttons.exportImage")}>
           <ImageExportModal
             elements={elements}
+            page={page}
             appState={appState}
             files={files}
             exportPadding={exportPadding}

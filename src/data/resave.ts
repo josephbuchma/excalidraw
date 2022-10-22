@@ -1,4 +1,4 @@
-import { ExcalidrawElement } from "../element/types";
+import { ExcalidrawElement, ExcalidrawPageElement } from "../element/types";
 import { AppState, BinaryFiles } from "../types";
 import { exportCanvas } from ".";
 import { getNonDeletedElements } from "../element";
@@ -6,6 +6,7 @@ import { getFileHandleType, isImageFileHandleType } from "./blob";
 
 export const resaveAsImageWithScene = async (
   elements: readonly ExcalidrawElement[],
+  page: ExcalidrawPageElement | null,
   appState: AppState,
   files: BinaryFiles,
 ) => {
@@ -26,6 +27,7 @@ export const resaveAsImageWithScene = async (
   await exportCanvas(
     fileHandleType,
     getNonDeletedElements(elements),
+    page,
     appState,
     files,
     {

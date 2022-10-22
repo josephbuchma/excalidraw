@@ -40,10 +40,10 @@ const ChartPreviewBtn = (props: {
     (async () => {
       svg = await exportToSvg(
         elements,
+        null,
         {
           exportBackground: false,
           viewBackgroundColor: oc.white,
-          canvasSize: { mode: "infinite" },
         },
         null, // files
       );

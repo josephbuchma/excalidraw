@@ -66,18 +66,6 @@ export type BinaryFileData = {
   created: number;
 };
 
-export type CanvasSize =
-  | {
-      mode: "fixed";
-      width: number;
-      height: number;
-      autoZoom?: boolean;
-    }
-  | { mode: "infinite" }
-  | { mode: "default" };
-
-export type DocumentMode = "single-page" | "multi-page" | "default";
-
 export type BinaryFileMetadata = Omit<BinaryFileData, "dataURL">;
 
 export type BinaryFiles = Record<ExcalidrawElement["id"], BinaryFileData>;
@@ -93,12 +81,9 @@ export type LastActiveToolBeforeEraser =
     }
   | null;
 export type AppState = {
-  canvasSize: CanvasSize;
   currentPageId: string | null;
-  documentMode: DocumentMode | null;
   isLoading: boolean;
   errorMessage: string | null;
-  fixedCanvasFrameElement: NonDeletedExcalidrawElement | null;
   eraseDropzoneElement: NonDeletedExcalidrawElement | null;
   draggingElement: NonDeletedExcalidrawElement | null;
   resizingElement: NonDeletedExcalidrawElement | null;

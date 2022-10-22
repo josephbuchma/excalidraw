@@ -20,8 +20,8 @@ export const actionAddPage = register({
   name: "addPage",
   isCrossPageAction: true,
   trackEvent: { category: "toolbar" },
-  contextItemPredicate: (elements, appState) => {
-    return appState.documentMode === "multi-page";
+  contextItemPredicate: (elements, appState, appProps) => {
+    return !!appProps.multiPageMode;
   },
   perform: (elements, appState, forData, app) => {
     const { currentPageId } = appState;
@@ -29,7 +29,11 @@ export const actionAddPage = register({
       console.error("can't add page when currentPageId is null");
       return { commitToHistory: false };
     }
-    const newPage = newPageElement();
+    const newPage = newPageElement({
+      color: appState.viewBackgroundColor,
+      width: app.props.defaultCanvasSize?.width,
+      height: app.props.defaultCanvasSize?.height,
+    });
     const updatedElements = addPage(newPage, currentPageId, elements);
     return {
       commitToHistory: true,
@@ -41,10 +45,10 @@ export const actionAddPage = register({
   //   event[KEYS.CTRL_OR_CMD] &&
   //   event.key.toLowerCase() === KEYS.Z &&
   //   !event.shiftKey,
-  PanelComponent: ({ updateData, data, appState, elements }) => (
+  PanelComponent: ({ updateData, data, appState, elements, appProps }) => (
     <ToolButton
       type="button"
-      visible={appState.documentMode === "multi-page"}
+      visible={appProps.multiPageMode}
       icon={addPageIcon}
       aria-label={t("buttons.undo")}
       onClick={updateData}
@@ -82,12 +86,10 @@ export const actionDeletePage = register({
   //   event[KEYS.CTRL_OR_CMD] &&
   //   event.key.toLowerCase() === KEYS.Z &&
   //   !event.shiftKey,
-  PanelComponent: ({ updateData, data, appState, elements }) => (
+  PanelComponent: ({ updateData, data, elements, appProps }) => (
     <ToolButton
       type="button"
-      visible={
-        appState.documentMode === "multi-page" && !hasSingleEmptyPage(elements)
-      }
+      visible={appProps.multiPageMode && !hasSingleEmptyPage(elements)}
       icon={trash}
       aria-label={t("buttons.undo")}
       onClick={updateData}
@@ -110,11 +112,11 @@ export const actionPrevPage = register({
   //   event[KEYS.CTRL_OR_CMD] &&
   //   event.key.toLowerCase() === KEYS.Z &&
   //   !event.shiftKey,
-  PanelComponent: ({ updateData, data, appState, elements }) => (
+  PanelComponent: ({ updateData, data, appState, elements, appProps }) => (
     <ToolButton
       type="button"
       visible={Boolean(
-        appState.documentMode === "multi-page" &&
+        appProps.multiPageMode &&
           appState.currentPageId &&
           hasPageBefore(appState.currentPageId, elements),
       )}
@@ -141,11 +143,11 @@ export const actionNextPage = register({
   //     event.shiftKey &&
   //     event.key.toLowerCase() === KEYS.Z) ||
   //   (isWindows && event.ctrlKey && !event.shiftKey && event.key === KEYS.Y),
-  PanelComponent: ({ updateData, data, appState, elements }) => (
+  PanelComponent: ({ updateData, data, appState, elements, appProps }) => (
     <ToolButton
       type="button"
       visible={
-        appState.documentMode === "multi-page" &&
+        appProps.multiPageMode &&
         !!appState.currentPageId &&
         hasPageAfter(appState.currentPageId, elements)
       }

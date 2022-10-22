@@ -344,23 +344,30 @@ export const newImageElement = (
   };
 };
 
-export const newPageElement = (): ExcalidrawPageElement => {
-  const base = _newElementBase<ExcalidrawPageElement>("page", {
-    backgroundColor: "transparent",
+export const newPageElement = ({
+  width,
+  height,
+  color,
+}: {
+  width?: number;
+  height?: number;
+  color?: string;
+}): ExcalidrawPageElement => {
+  return _newElementBase<ExcalidrawPageElement>("page", {
+    backgroundColor: color || "white",
     fillStyle: "solid",
     locked: true,
-    opacity: 0,
+    opacity: 100,
     roughness: 0,
     x: 0,
     y: 0,
+    width,
+    height,
     strokeColor: "transparent",
     strokeSharpness: "sharp",
     strokeStyle: "solid",
     strokeWidth: 0,
   });
-  return {
-    ...base,
-  };
 };
 
 // Simplified deep clone for the purpose of cloning ExcalidrawElement only

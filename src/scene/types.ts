@@ -1,5 +1,5 @@
 import { ExcalidrawTextElement } from "../element/types";
-import { AppClassProperties, AppState, CanvasSize } from "../types";
+import { AppClassProperties, AppState } from "../types";
 
 export type RenderConfig = {
   // AppState values
@@ -27,8 +27,6 @@ export type RenderConfig = {
   /** when exporting the behavior is slightly different (e.g. we can't use
     CSS filters), and we disable render optimizations for best output */
   isExporting: boolean;
-
-  canvasSize: CanvasSize;
 
   disableTransformUI?: boolean;
   showEraseDropzone?: boolean;

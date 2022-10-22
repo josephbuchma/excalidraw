@@ -14,7 +14,7 @@ import { CheckboxItem } from "../components/CheckboxItem";
 import { getExportSize } from "../scene/export";
 import { DEFAULT_EXPORT_PADDING, EXPORT_SCALES, THEME } from "../constants";
 import { getSelectedElements, isSomeElementSelected } from "../scene";
-import { getNonDeletedElements } from "../element";
+import { findPageElement, getNonDeletedElements } from "../element";
 import { ActiveFile } from "../components/ActiveFile";
 import { isImageFileHandle } from "../data/blob";
 import { nativeFileSystemSupported } from "../data/filesystem";
@@ -41,6 +41,7 @@ export const actionChangeProjectName = register({
 export const actionChangeExportScale = register({
   name: "changeExportScale",
   trackEvent: { category: "export", action: "scale" },
+  isCrossPageAction: true,
   perform: (_elements, appState, value) => {
     return {
       appState: { ...appState, exportScale: value },
@@ -53,15 +54,16 @@ export const actionChangeExportScale = register({
     const exportedElements = exportSelected
       ? getSelectedElements(elements, appState)
       : elements;
+    const page = findPageElement(appState.currentPageId, elements);
 
     return (
       <>
         {EXPORT_SCALES.map((s) => {
           const [width, height] = getExportSize(
             exportedElements,
+            page,
             DEFAULT_EXPORT_PADDING,
             s,
-            appState,
           );
 
           const scaleButtonTitle = `${t(
@@ -137,7 +139,12 @@ export const actionSaveToActiveFile = register({
 
     try {
       const { fileHandle } = isImageFileHandle(appState.fileHandle)
-        ? await resaveAsImageWithScene(elements, appState, app.files)
+        ? await resaveAsImageWithScene(
+            elements,
+            app.scene.getCurrentPageElement(),
+            appState,
+            app.files,
+          )
         : await saveAsJSON(elements, appState, app.files);
 
       return {

@@ -76,11 +76,26 @@ export const getNonDeletedElements = (elements: readonly ExcalidrawElement[]) =>
     (element) => !element.isDeleted,
   ) as readonly NonDeletedExcalidrawElement[];
 
+export const findPageElement = (
+  id: string | null,
+  elements: readonly ExcalidrawElement[],
+): ExcalidrawPageElement | null => {
+  if (!id) {
+    return null;
+  }
+  const p = elements.filter(
+    (el) => el.id === id && el.type === "page",
+  ) as unknown as ExcalidrawPageElement;
+  return p || null;
+};
+
 export const getElementsOnPage = (
   pageId: string | null,
   elements: readonly ExcalidrawElement[],
+  includePageElement?: boolean,
 ): ExcalidrawPageElements => {
   let pageElIdx: number = -1;
+  const sliceAdjust = includePageElement ? 0 : 1;
   for (let i = 0; i < elements.length; i++) {
     const el = elements[i];
     if (pageElIdx < 0 && el.type === "page" && el.id === pageId) {
@@ -88,10 +103,13 @@ export const getElementsOnPage = (
       continue;
     }
     if (pageElIdx > -1 && el.type === "page") {
-      return elements.slice(pageElIdx + 1, i) as ExcalidrawPageElements;
+      return elements.slice(
+        pageElIdx + sliceAdjust,
+        i,
+      ) as ExcalidrawPageElements;
     }
   }
-  return elements.slice(pageElIdx + 1) as ExcalidrawPageElements;
+  return elements.slice(pageElIdx + sliceAdjust) as ExcalidrawPageElements;
 };
 
 export const replaceElementsOnPage = (
@@ -140,6 +158,10 @@ export const addPage = (
     return ret;
   }
   return [...allElements, page];
+};
+
+export const isFixedSizePage = (page: ExcalidrawPageElement) => {
+  return (page.width || 0) + (page.height || 0) > 0;
 };
 
 export const deletePage = (
