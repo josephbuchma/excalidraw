@@ -22,7 +22,7 @@ export const PageAwarenessMobile = React.memo(
           <div
             key={id}
             className={clsx({
-              current: (id === currentPageId ? current++ : current) === 0,
+              hl: (id === currentPageId ? current++ : current) === 0,
             })}
           />
         ))}
@@ -62,7 +62,7 @@ export const PageAwarenessDesktop = React.memo(
             <div
               key={id}
               className={clsx("page", {
-                current: id === currentPageId,
+                hl: id === currentPageId,
               })}
             />
           ))}
