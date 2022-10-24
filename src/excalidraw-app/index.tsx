@@ -728,8 +728,17 @@ const ExcalidrawWrapper = () => {
         isCollaborating={isCollaborating}
         onPointerUpdate={collabAPI?.onPointerUpdate}
         UIOptions={{
+          disableLibrary: true,
+          disableLockButton: true,
+          disablePenModeButton: true,
+          disableCollaboration: true,
           canvasActions: {
-            toggleTheme: true,
+            toggleTheme: false,
+            clearCanvas: false,
+            changeViewBackgroundColor: false,
+            loadScene: false,
+            saveAsImage: false,
+            saveToActiveFile: false,
             export: {
               onExportToBackend,
               renderCustomUI: (elements, appState, files) => {

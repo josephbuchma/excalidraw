@@ -228,7 +228,7 @@ const LayerUI = ({
             {renderJSONExportDialog()}
             {renderImageExportDialog()}
             <Separator />
-            {onCollabButtonClick && (
+            {onCollabButtonClick && !UIOptions.disableCollaboration && (
               <CollabButton
                 isCollaborating={isCollaborating}
                 collaboratorCount={appState.collaborators.size}
@@ -292,19 +292,23 @@ const LayerUI = ({
                       "zen-mode": appState.zenModeEnabled,
                     })}
                   >
-                    <PenModeButton
-                      zenModeEnabled={appState.zenModeEnabled}
-                      checked={appState.penMode}
-                      onChange={onPenModeToggle}
-                      title={t("toolBar.penMode")}
-                      penDetected={appState.penDetected}
-                    />
-                    <LockButton
-                      zenModeEnabled={appState.zenModeEnabled}
-                      checked={appState.activeTool.locked}
-                      onChange={() => onLockToggle()}
-                      title={t("toolBar.lock")}
-                    />
+                    {!UIOptions.disablePenModeButton && (
+                      <PenModeButton
+                        zenModeEnabled={appState.zenModeEnabled}
+                        checked={appState.penMode}
+                        onChange={onPenModeToggle}
+                        title={t("toolBar.penMode")}
+                        penDetected={appState.penDetected}
+                      />
+                    )}
+                    {!UIOptions.disableLockButton && (
+                      <LockButton
+                        zenModeEnabled={appState.zenModeEnabled}
+                        checked={appState.activeTool.locked}
+                        onChange={() => onLockToggle()}
+                        title={t("toolBar.lock")}
+                      />
+                    )}
                     <Island
                       padding={1}
                       className={clsx("App-toolbar", {
@@ -333,10 +337,12 @@ const LayerUI = ({
                         />
                       </Stack.Row>
                     </Island>
-                    <LibraryButton
-                      appState={appState}
-                      setAppState={setAppState}
-                    />
+                    {!UIOptions.disableLibrary && (
+                      <LibraryButton
+                        appState={appState}
+                        setAppState={setAppState}
+                      />
+                    )}
                   </Stack.Row>
                 </Stack.Col>
               )}
@@ -429,6 +435,7 @@ const LayerUI = ({
           onImageAction={onImageAction}
           renderTopRightUI={renderTopRightUI}
           renderCustomStats={renderCustomStats}
+          UIOptions={UIOptions}
         />
       )}
       {device.isMobile && !alternativeMobileUI && (

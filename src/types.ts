@@ -30,6 +30,7 @@ import { MaybeTransformHandleType } from "./element/transformHandles";
 import Library from "./data/library";
 import type { FileSystemHandle } from "./data/filesystem";
 import type { ALLOWED_IMAGE_MIME_TYPES, MIME_TYPES } from "./constants";
+import { ToolName } from "./tests/queries/toolQueries";
 
 export type Point = Readonly<RoughPoint>;
 
@@ -305,7 +306,12 @@ export interface ExcalidrawProps {
     appState: AppState,
   ) => JSX.Element;
   UIOptions?: {
+    disableCollaboration?: boolean;
+    disableLibrary?: boolean;
+    disableLockButton?: boolean;
+    disablePenModeButton?: boolean;
     dockedSidebarBreakpoint?: number;
+    enabledTools?: ToolName[];
     canvasActions?: CanvasActions;
   };
   detectScroll?: boolean;
@@ -384,7 +390,7 @@ type CanvasActions = {
 export type AppProps = Merge<
   ExcalidrawProps,
   {
-    UIOptions: {
+    UIOptions: ExcalidrawProps["UIOptions"] & {
       canvasActions: Required<CanvasActions> & { export: ExportOpts };
       dockedSidebarBreakpoint?: number;
     };

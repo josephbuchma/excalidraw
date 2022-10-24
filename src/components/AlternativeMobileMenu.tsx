@@ -46,6 +46,7 @@ type AlternativeMobileMenuProps = {
     appState: AppState,
   ) => JSX.Element | null;
   renderCustomStats?: ExcalidrawProps["renderCustomStats"];
+  UIOptions: ExcalidrawProps["UIOptions"];
 };
 
 export const AlternativeMobileMenu = ({
@@ -64,6 +65,7 @@ export const AlternativeMobileMenu = ({
   onImageAction,
   renderTopRightUI,
   renderCustomStats,
+  UIOptions,
 }: AlternativeMobileMenuProps) => {
   const renderAppToolbar = () => {
     if (appState.viewModeEnabled) {
@@ -126,7 +128,7 @@ export const AlternativeMobileMenu = ({
         {actionManager.renderAction("loadScene")}
         {renderJSONExportDialog()}
         {renderImageExportDialog()}
-        {onCollabButtonClick && (
+        {onCollabButtonClick && !UIOptions?.disableCollaboration && (
           <CollabButton
             isCollaborating={isCollaborating}
             collaboratorCount={appState.collaborators.size}
