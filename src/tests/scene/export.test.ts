@@ -5,6 +5,7 @@ import {
   ellipseFixture,
   rectangleWithLinkFixture,
 } from "../fixtures/elementFixture";
+import { CanvasSize } from "../../types";
 
 describe("exportToSvg", () => {
   window.EXCALIDRAW_ASSET_PATH = "/";
@@ -19,6 +20,7 @@ describe("exportToSvg", () => {
     exportBackground: false,
     viewBackgroundColor: "#ffffff",
     files: {},
+    canvasSize: <CanvasSize>{},
   };
 
   it("with default arguments", async () => {

@@ -1,4 +1,4 @@
-import { ColorPicker } from "../components/ColorPicker/ColorPicker";
+
 import { ZoomInIcon, ZoomOutIcon } from "../components/icons";
 import { ToolButton } from "../components/ToolButton";
 import { CURSOR_TYPE, MIN_ZOOM, THEME, ZOOM_STEP } from "../constants";
@@ -21,6 +21,7 @@ import {
 } from "../appState";
 import { DEFAULT_CANVAS_BACKGROUND_PICKS } from "../colors";
 import { Bounds } from "../element/bounds";
+import { ColorPicker } from "../components/ColorPicker/ColorPicker";
 
 export const actionChangeViewBackgroundColor = register({
   name: "changeViewBackgroundColor",
@@ -31,9 +32,17 @@ export const actionChangeViewBackgroundColor = register({
       !appState.viewModeEnabled
     );
   },
-  perform: (_, appState, value) => {
+  perform: (_, appState, value: { viewBackgroundColor: string }) => {
     return {
-      appState: { ...appState, ...value },
+      appState: {
+        ...appState,
+        ...value,
+        fixedCanvasFrameElement:
+          appState.fixedCanvasFrameElement &&
+          newElementWith(appState.fixedCanvasFrameElement, {
+            backgroundColor: value.viewBackgroundColor,
+          }),
+      },
       commitToHistory: !!value.viewBackgroundColor,
     };
   },
@@ -46,7 +55,7 @@ export const actionChangeViewBackgroundColor = register({
         label={t("labels.canvasBackground")}
         type="canvasBackground"
         color={appState.viewBackgroundColor}
-        onChange={(color) => updateData({ viewBackgroundColor: color })}
+        onChange={(color: any) => updateData({ viewBackgroundColor: color })}
         data-testid="canvas-background-picker"
         elements={elements}
         appState={appState}
@@ -73,6 +82,9 @@ export const actionClearCanvas = register({
       ),
       appState: {
         ...getDefaultAppState(),
+        scrollX: appState.canvasSize.mode === "fixed" ? appState.scrollX : 0,
+        scrollY: appState.canvasSize.mode === "fixed" ? appState.scrollY : 0,
+        zoom: appState.zoom,
         files: {},
         theme: appState.theme,
         penMode: appState.penMode,

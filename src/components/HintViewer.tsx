@@ -84,7 +84,11 @@ const getHints = ({ appState, isMobile, device, app }: HintViewerProps) => {
     ) {
       return t("hints.deepBoxSelect");
     }
-    if (!selectedElements.length && !isMobile) {
+    if (
+      !selectedElements.length &&
+      !isMobile &&
+      appState.canvasSize.mode !== "fixed"
+    ) {
       return t("hints.canvasPanning");
     }
   }

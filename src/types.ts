@@ -80,6 +80,16 @@ export type BinaryFileData = {
   lastRetrieved?: number;
 };
 
+export type CanvasSize =
+  | {
+      mode: "fixed";
+      width: number;
+      height: number;
+      autoZoom?: boolean;
+    }
+  | { mode: "infinite" }
+  | { mode: "default" };
+
 export type BinaryFileMetadata = Omit<BinaryFileData, "dataURL">;
 
 export type BinaryFiles = Record<ExcalidrawElement["id"], BinaryFileData>;
@@ -99,6 +109,7 @@ export type SidebarName = string;
 export type SidebarTabName = string;
 
 export type AppState = {
+  canvasSize: CanvasSize;
   contextMenu: {
     items: ContextMenuItems;
     top: number;
@@ -107,6 +118,7 @@ export type AppState = {
   showWelcomeScreen: boolean;
   isLoading: boolean;
   errorMessage: React.ReactNode;
+  fixedCanvasFrameElement: NonDeletedExcalidrawElement | null;
   draggingElement: NonDeletedExcalidrawElement | null;
   resizingElement: NonDeletedExcalidrawElement | null;
   multiElement: NonDeleted<ExcalidrawLinearElement> | null;
@@ -361,6 +373,7 @@ export interface ExcalidrawProps {
   ) => void;
   onScrollChange?: (scrollX: number, scrollY: number) => void;
   children?: React.ReactNode;
+  defaultCanvasSize?: { width: number; height: number; autoZoom?: boolean };
 }
 
 export type SceneData = {

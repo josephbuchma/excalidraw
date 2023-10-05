@@ -391,19 +391,27 @@ export const _renderScene = ({
     }
 
     // Paint background
+    const isFixedCanvasMode =
+      appState.canvasSize.mode === "fixed" &&
+      appState.fixedCanvasFrameElement &&
+      !isExporting;
+
     if (typeof renderConfig.viewBackgroundColor === "string") {
       const hasTransparence =
         renderConfig.viewBackgroundColor === "transparent" ||
         renderConfig.viewBackgroundColor.length === 5 || // #RGBA
         renderConfig.viewBackgroundColor.length === 9 || // #RRGGBBA
         /(hsla|rgba)\(/.test(renderConfig.viewBackgroundColor);
-      if (hasTransparence) {
+      if (hasTransparence || isFixedCanvasMode) {
         context.clearRect(0, 0, normalizedCanvasWidth, normalizedCanvasHeight);
       }
-      context.save();
-      context.fillStyle = renderConfig.viewBackgroundColor;
-      context.fillRect(0, 0, normalizedCanvasWidth, normalizedCanvasHeight);
-      context.restore();
+
+      if (!isFixedCanvasMode) {
+        context.save();
+        context.fillStyle = renderConfig.viewBackgroundColor;
+        context.fillRect(0, 0, normalizedCanvasWidth, normalizedCanvasHeight);
+        context.restore();
+      }
     } else {
       context.clearRect(0, 0, normalizedCanvasWidth, normalizedCanvasHeight);
     }
@@ -411,6 +419,25 @@ export const _renderScene = ({
     // Apply zoom
     context.save();
     context.scale(renderConfig.zoom.value, renderConfig.zoom.value);
+
+    if (appState.canvasSize.mode === "fixed") {
+      try {
+        const { width, height } = appState.canvasSize!;
+        context.rect(appState.scrollX, appState.scrollY, width, height);
+        context.clip();
+        renderElement(
+          appState.fixedCanvasFrameElement!,
+          rc,
+          context,
+          {
+            ...renderConfig,
+          },
+          appState,
+        );
+      } catch (error: any) {
+        console.error(error);
+      }
+    }
 
     // Grid
     if (renderGrid && appState.gridSize) {
